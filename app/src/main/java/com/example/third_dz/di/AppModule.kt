@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object AppModule {
-    private const val BASE_URL = "https://cat-fact.herokuapp.com/"
+    private const val BASE_URL = "https://meowfacts.herokuapp.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

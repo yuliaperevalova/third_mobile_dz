@@ -1,21 +1,17 @@
 package com.example.third_dz.data.api
 
-import com.example.third_dz.data.model.Fact
+import com.example.third_dz.data.model.MeowFactsResponse
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CatFactsApi {
-    @GET("facts/random")
+    @GET("/")
     suspend fun getRandomFacts(
-        @Query("animal_type") animalType: String = "cat",
-        @Query("amount") amount: Int = 20
-    ): List<Fact>
+        @Query("count") count: Int = 20
+    ): MeowFactsResponse
 
-    @GET("facts/{factId}")
+    @GET("/")
     suspend fun getFactById(
-        @Path("factId") factId: String,
-        @Query("animal_type") animalType: String = "cat"
-    ): Fact
+        @Query("id") id: Int
+    ): MeowFactsResponse
 }
-

@@ -112,13 +112,6 @@ fun FactDetailScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (state.fact.updatedAt != null) {
-                                    Text(
-                                        text = "Updated: ${state.fact.updatedAt}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
                             }
                         }
                     }
