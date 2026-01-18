@@ -28,11 +28,7 @@ fun FactDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-    val isFavourite by listViewModel.getFavourites().let { favourites ->
-        androidx.compose.runtime.remember(factId, favourites) {
-            favourites.contains(factId)
-        }
-    }
+    val isFavourite = listViewModel.isFavourite(factId)
 
     LaunchedEffect(factId) {
         detailViewModel.loadFact(factId)

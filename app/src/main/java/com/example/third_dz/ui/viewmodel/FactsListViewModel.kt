@@ -4,14 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.third_dz.data.repository.CatFactsRepository
 import com.example.third_dz.ui.state.FactsListUiState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class FactsListViewModel(
     private val repository: CatFactsRepository
 ) : ViewModel() {
 
-    var uiState: FactsListUiState = FactsListUiState.Loading
-        private set
+    private val _uiState = MutableStateFlow<FactsListUiState>(FactsListUiState.Loading)
+    val uiState: StateFlow<FactsListUiState> = _uiState.asStateFlow()
 
     private val favourites = mutableSetOf<String>()
 
@@ -21,16 +24,16 @@ class FactsListViewModel(
 
     fun loadFacts(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            uiState = FactsListUiState.Loading
+            _uiState.value = FactsListUiState.Loading
             try {
                 val facts = repository.getRandomFacts(amount = 20, forceRefresh = forceRefresh)
-                uiState = if (facts.isEmpty()) {
+                _uiState.value = if (facts.isEmpty()) {
                     FactsListUiState.Empty
                 } else {
                     FactsListUiState.Success(facts)
                 }
             } catch (e: Exception) {
-                uiState = FactsListUiState.Error(e.message ?: "Unknown error")
+                _uiState.value = FactsListUiState.Error(e.message ?: "Unknown error")
             }
         }
     }
@@ -41,18 +44,10 @@ class FactsListViewModel(
         } else {
             favourites.add(factId)
         }
-        updateUiStateWithFavourites()
     }
 
     fun isFavourite(factId: String): Boolean {
         return favourites.contains(factId)
-    }
-
-    private fun updateUiStateWithFavourites() {
-        val currentState = uiState
-        if (currentState is FactsListUiState.Success) {
-            uiState = currentState
-        }
     }
 
     fun getFavourites(): Set<String> = favourites.toSet()
