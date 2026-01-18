@@ -9,7 +9,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,10 +29,11 @@ fun FavouritesScreen(
     modifier: Modifier = Modifier
 ) {
     val listUiState by listViewModel.uiState.collectAsStateWithLifecycle()
+    val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
+    
     val favouriteFacts = when (listUiState) {
         is com.example.third_dz.ui.state.FactsListUiState.Success -> {
-            val favouriteIds = listViewModel.getFavourites()
-            val favouriteFactsList = listUiState.facts.filter { it.id in favouriteIds }
+            val favouriteFactsList = listUiState.facts.filter { it.id in favourites }
             if (favouriteFactsList.isEmpty()) {
                 FavouritesUiState.Empty
             } else {

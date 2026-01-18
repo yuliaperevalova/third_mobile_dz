@@ -31,6 +31,7 @@ fun FactsListScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val favourites by viewModel.favourites.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
     
     LaunchedEffect(pullToRefreshState.isRefreshing) {
@@ -109,7 +110,7 @@ fun FactsListScreen(
                         items(state.facts) { fact ->
                             FactItem(
                                 fact = fact,
-                                isFavourite = viewModel.isFavourite(fact.id),
+                                isFavourite = favourites.contains(fact.id),
                                 onFactClick = { onFactClick(fact.id) },
                                 onFavouriteClick = { viewModel.toggleFavourite(fact.id) }
                             )

@@ -1,14 +1,10 @@
 package com.example.third_dz.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.third_dz.di.AppModule
 import com.example.third_dz.ui.screen.FactDetailScreen
 import com.example.third_dz.ui.screen.FactsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
@@ -60,7 +56,14 @@ fun NavGraph(
             )
         }
         
-        composable(Screen.Detail().route) { backStackEntry ->
+        composable(
+            route = Screen.Detail().route,
+            arguments = listOf(
+                androidx.navigation.navArgument("factId") {
+                    type = androidx.navigation.NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
             val factId = backStackEntry.arguments?.getString("factId") ?: return@composable
             FactDetailScreen(
                 factId = factId,

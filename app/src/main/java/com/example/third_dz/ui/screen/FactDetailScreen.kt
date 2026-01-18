@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +28,8 @@ fun FactDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-    val isFavourite = listViewModel.isFavourite(factId)
+    val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
+    val isFavourite = favourites.contains(factId)
 
     LaunchedEffect(factId) {
         detailViewModel.loadFact(factId)

@@ -16,7 +16,8 @@ class FactsListViewModel(
     private val _uiState = MutableStateFlow<FactsListUiState>(FactsListUiState.Loading)
     val uiState: StateFlow<FactsListUiState> = _uiState.asStateFlow()
 
-    private val favourites = mutableSetOf<String>()
+    private val _favourites = MutableStateFlow<Set<String>>(emptySet())
+    val favourites: StateFlow<Set<String>> = _favourites.asStateFlow()
 
     init {
         loadFacts()
@@ -39,17 +40,19 @@ class FactsListViewModel(
     }
 
     fun toggleFavourite(factId: String) {
-        if (favourites.contains(factId)) {
-            favourites.remove(factId)
+        val currentFavourites = _favourites.value.toMutableSet()
+        if (currentFavourites.contains(factId)) {
+            currentFavourites.remove(factId)
         } else {
-            favourites.add(factId)
+            currentFavourites.add(factId)
         }
+        _favourites.value = currentFavourites
     }
 
     fun isFavourite(factId: String): Boolean {
-        return favourites.contains(factId)
+        return _favourites.value.contains(factId)
     }
 
-    fun getFavourites(): Set<String> = favourites.toSet()
+    fun getFavourites(): Set<String> = _favourites.value
 }
 
