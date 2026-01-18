@@ -2,6 +2,8 @@ package com.example.third_dz.di
 
 import com.example.third_dz.data.api.CatFactsApi
 import com.example.third_dz.data.repository.CatFactsRepository
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -15,7 +17,17 @@ object AppModule {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    private val headerInterceptor = Interceptor { chain ->
+        val originalRequest = chain.request()
+        val newRequest = originalRequest.newBuilder()
+            .header("User-Agent", "CatFactsApp/1.0")
+            .header("Accept", "application/json")
+            .build()
+        chain.proceed(newRequest)
+    }
+
     private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(headerInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)

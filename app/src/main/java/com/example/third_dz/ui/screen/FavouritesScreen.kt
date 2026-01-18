@@ -31,9 +31,9 @@ fun FavouritesScreen(
     val listUiState by listViewModel.uiState.collectAsStateWithLifecycle()
     val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
     
-    val favouriteFacts = when (listUiState) {
+    val favouriteFacts = when (val state = listUiState) {
         is com.example.third_dz.ui.state.FactsListUiState.Success -> {
-            val favouriteFactsList = listUiState.facts.filter { it.id in favourites }
+            val favouriteFactsList = state.facts.filter { it.id in favourites }
             if (favouriteFactsList.isEmpty()) {
                 FavouritesUiState.Empty
             } else {

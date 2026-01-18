@@ -7,18 +7,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.example.third_dz.ui.state.FactsListUiState
 import com.example.third_dz.ui.viewmodel.FactsListViewModel
 
@@ -32,19 +30,9 @@ fun FactsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val favourites by viewModel.favourites.collectAsStateWithLifecycle()
-    val pullToRefreshState = rememberPullToRefreshState()
+    val isRefreshing = uiState is FactsListUiState.Loading
     
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            viewModel.loadFacts(forceRefresh = true)
-        }
-    }
-    
-    LaunchedEffect(uiState) {
-        if (uiState !is FactsListUiState.Loading) {
-            pullToRefreshState.endRefresh()
-        }
-    }
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isRefreshing)
 
     Scaffold(
         topBar = {
@@ -65,11 +53,10 @@ fun FactsListScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(padding)
-                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
             when (val state = uiState) {
                 is FactsListUiState.Loading -> {
-                    if (state == FactsListUiState.Loading && !pullToRefreshState.isRefreshing) {
+                    if (!isRefreshing) {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center)
                         )
@@ -102,27 +89,27 @@ fun FactsListScreen(
                     )
                 }
                 is FactsListUiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    SwipeRefresh(
+                        state = swipeRefreshState,
+                        onRefresh = { viewModel.loadFacts(forceRefresh = true) }
                     ) {
-                        items(state.facts) { fact ->
-                            FactItem(
-                                fact = fact,
-                                isFavourite = favourites.contains(fact.id),
-                                onFactClick = { onFactClick(fact.id) },
-                                onFavouriteClick = { viewModel.toggleFavourite(fact.id) }
-                            )
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.facts) { fact ->
+                                FactItem(
+                                    fact = fact,
+                                    isFavourite = favourites.contains(fact.id),
+                                    onFactClick = { onFactClick(fact.id) },
+                                    onFavouriteClick = { viewModel.toggleFavourite(fact.id) }
+                                )
+                            }
                         }
                     }
                 }
             }
-            
-            PullToRefreshContainer(
-                state = pullToRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
         }
     }
 }

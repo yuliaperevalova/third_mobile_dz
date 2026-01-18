@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
     
+    implementation(libs.accompanist.swiperefresh)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
