@@ -85,6 +85,21 @@ fun FilmDetailScreen(
                         }
                     }
                 }
+                is FilmDetailUiState.Empty -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Film not found",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
                 is FilmDetailUiState.Success -> {
                     LazyColumn(
                         modifier = Modifier

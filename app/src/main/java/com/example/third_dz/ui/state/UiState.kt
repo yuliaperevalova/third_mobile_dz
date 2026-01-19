@@ -15,6 +15,7 @@ sealed class FilmsListUiState {
 sealed class FilmDetailUiState {
     data object Loading : FilmDetailUiState()
     data class Error(val message: String) : FilmDetailUiState()
+    data object Empty : FilmDetailUiState()
     data class Success(
         val film: Film,
         val isFavourite: Boolean
@@ -22,6 +23,8 @@ sealed class FilmDetailUiState {
 }
 
 sealed class FavouritesUiState {
+    data object Loading : FavouritesUiState()
+    data class Error(val message: String) : FavouritesUiState()
     data object Empty : FavouritesUiState()
     data class Success(val films: List<Film>) : FavouritesUiState()
 }

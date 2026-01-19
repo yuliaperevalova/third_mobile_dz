@@ -18,6 +18,8 @@ class FavouritesViewModel(
         listViewModel.getFavouritesFlow()
     ) { listState, favourites ->
         when (listState) {
+            is FilmsListUiState.Loading -> FavouritesUiState.Loading
+            is FilmsListUiState.Error -> FavouritesUiState.Error(listState.message)
             is FilmsListUiState.Success -> {
                 val favouriteFilms = listState.films.filter { it.id in favourites }
                 if (favouriteFilms.isEmpty()) {
@@ -26,16 +28,19 @@ class FavouritesViewModel(
                     FavouritesUiState.Success(favouriteFilms)
                 }
             }
-            else -> FavouritesUiState.Empty
+            is FilmsListUiState.Empty -> FavouritesUiState.Empty
         }
     }.stateIn(
         scope = viewModelScope,
         started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
-        initialValue = FavouritesUiState.Empty
+        initialValue = FavouritesUiState.Loading
     )
 
     fun onEvent(event: FavouritesEvent) {
         when (event) {
+            is FavouritesEvent.Retry -> {
+                listViewModel.onEvent(com.example.third_dz.ui.event.FilmsListEvent.Refresh)
+            }
             is FavouritesEvent.ToggleFavourite -> {
                 listViewModel.onEvent(com.example.third_dz.ui.event.FilmsListEvent.ToggleFavourite(event.filmId))
             }

@@ -42,6 +42,30 @@ fun FavouritesScreen(
                 .padding(padding)
         ) {
             when (state) {
+                is FavouritesUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                is FavouritesUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Error: ${state.message}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { onEvent(FavouritesEvent.Retry) }) {
+                            Text("Retry")
+                        }
+                    }
+                }
                 is FavouritesUiState.Empty -> {
                     Column(
                         modifier = Modifier

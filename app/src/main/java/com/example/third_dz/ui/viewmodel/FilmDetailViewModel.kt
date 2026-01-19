@@ -53,7 +53,13 @@ class FilmDetailViewModel(
                 val isFavourite = listViewModel.getFavourites().contains(filmId)
                 _uiState.value = FilmDetailUiState.Success(film, isFavourite)
             } catch (e: Exception) {
-                _uiState.value = FilmDetailUiState.Error(e.message ?: "Unknown error")
+                val errorMessage = e.message ?: "Unknown error"
+                if (errorMessage.contains("404", ignoreCase = true) || 
+                    errorMessage.contains("not found", ignoreCase = true)) {
+                    _uiState.value = FilmDetailUiState.Empty
+                } else {
+                    _uiState.value = FilmDetailUiState.Error(errorMessage)
+                }
             }
         }
     }
