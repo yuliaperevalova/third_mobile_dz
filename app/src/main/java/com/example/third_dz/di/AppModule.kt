@@ -1,8 +1,7 @@
 package com.example.third_dz.di
 
-import com.example.third_dz.data.api.CatFactsApi
-import com.example.third_dz.data.repository.CatFactsRepository
-import okhttp3.HttpUrl
+import com.example.third_dz.data.api.GhibliFilmsApi
+import com.example.third_dz.data.repository.GhibliFilmsRepository
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -11,7 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object AppModule {
-    private const val BASE_URL = "https://meowfacts.herokuapp.com/"
+    private const val BASE_URL = "https://ghibliapi.vercel.app/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -20,7 +19,7 @@ object AppModule {
     private val headerInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
         val newRequest = originalRequest.newBuilder()
-            .header("User-Agent", "CatFactsApp/1.0")
+            .header("User-Agent", "GhibliFilmsApp/1.0")
             .header("Accept", "application/json")
             .build()
         chain.proceed(newRequest)
@@ -40,8 +39,8 @@ object AppModule {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val catFactsApi: CatFactsApi = retrofit.create(CatFactsApi::class.java)
+    val ghibliFilmsApi: GhibliFilmsApi = retrofit.create(GhibliFilmsApi::class.java)
 
-    val catFactsRepository: CatFactsRepository = CatFactsRepository(catFactsApi)
+    val ghibliFilmsRepository: GhibliFilmsRepository = GhibliFilmsRepository(ghibliFilmsApi)
 }
 

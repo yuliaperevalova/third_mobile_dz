@@ -16,28 +16,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.third_dz.ui.state.FavouritesUiState
-import com.example.third_dz.ui.viewmodel.FactsListViewModel
+import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouritesScreen(
-    listViewModel: FactsListViewModel,
+    listViewModel: FilmsListViewModel,
     favouritesViewModel: FavouritesViewModel,
-    onFactClick: (String) -> Unit,
+    onFilmClick: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listUiState by listViewModel.uiState.collectAsStateWithLifecycle()
     val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
     
-    val favouriteFacts = when (val state = listUiState) {
-        is com.example.third_dz.ui.state.FactsListUiState.Success -> {
-            val favouriteFactsList = state.facts.filter { it.id in favourites }
-            if (favouriteFactsList.isEmpty()) {
+    val favouriteFilms = when (val state = listUiState) {
+        is com.example.third_dz.ui.state.FilmsListUiState.Success -> {
+            val favouriteFilmsList = state.films.filter { it.id in favourites }
+            if (favouriteFilmsList.isEmpty()) {
                 FavouritesUiState.Empty
             } else {
-                FavouritesUiState.Success(favouriteFactsList)
+                FavouritesUiState.Success(favouriteFilmsList)
             }
         }
         else -> FavouritesUiState.Empty
@@ -60,7 +60,7 @@ fun FavouritesScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (favouriteFacts) {
+            when (favouriteFilms) {
                 is FavouritesUiState.Empty -> {
                     Column(
                         modifier = Modifier
@@ -87,14 +87,14 @@ fun FavouritesScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(favouriteFacts.facts) { fact ->
-                            FactItem(
-                                fact = fact,
+                        items(favouriteFilms.films) { film ->
+                            FilmItem(
+                                film = film,
                                 isFavourite = true,
-                                onFactClick = { onFactClick(fact.id) },
-                                onFavouriteClick = { favouritesViewModel.toggleFavourite(fact.id) }
+                                onFilmClick = { onFilmClick(film.id) },
+                                onFavouriteClick = { favouritesViewModel.toggleFavourite(film.id) }
                             )
                         }
                     }

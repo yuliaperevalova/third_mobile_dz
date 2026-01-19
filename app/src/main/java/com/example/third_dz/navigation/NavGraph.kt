@@ -5,26 +5,26 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.third_dz.ui.screen.FactDetailScreen
-import com.example.third_dz.ui.screen.FactsListScreen
+import com.example.third_dz.ui.screen.FilmDetailScreen
+import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
-import com.example.third_dz.ui.viewmodel.FactDetailViewModel
-import com.example.third_dz.ui.viewmodel.FactsListViewModel
+import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
+import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 
 sealed class Screen(val route: String) {
     data object List : Screen("list")
     data object Favourites : Screen("favourites")
-    data class Detail(val factId: String = "{factId}") : Screen("detail/{factId}") {
-        fun createRoute(factId: String) = "detail/$factId"
+    data class Detail(val filmId: String = "{filmId}") : Screen("detail/{filmId}") {
+        fun createRoute(filmId: String) = "detail/$filmId"
     }
 }
 
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    listViewModel: FactsListViewModel,
-    detailViewModel: FactDetailViewModel,
+    listViewModel: FilmsListViewModel,
+    detailViewModel: FilmDetailViewModel,
     favouritesViewModel: FavouritesViewModel
 ) {
     NavHost(
@@ -32,10 +32,10 @@ fun NavGraph(
         startDestination = Screen.List.route
     ) {
         composable(Screen.List.route) {
-            FactsListScreen(
+            FilmsListScreen(
                 viewModel = listViewModel,
-                onFactClick = { factId ->
-                    navController.navigate(Screen.Detail(factId).createRoute(factId))
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
                 onFavouritesClick = {
                     navController.navigate(Screen.Favourites.route)
@@ -47,8 +47,8 @@ fun NavGraph(
             FavouritesScreen(
                 listViewModel = listViewModel,
                 favouritesViewModel = favouritesViewModel,
-                onFactClick = { factId ->
-                    navController.navigate(Screen.Detail(factId).createRoute(factId))
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
                 onBackClick = {
                     navController.popBackStack()
@@ -59,14 +59,14 @@ fun NavGraph(
         composable(
             route = Screen.Detail().route,
             arguments = listOf(
-                androidx.navigation.navArgument("factId") {
+                androidx.navigation.navArgument("filmId") {
                     type = androidx.navigation.NavType.StringType
                 }
             )
         ) { backStackEntry ->
-            val factId = backStackEntry.arguments?.getString("factId") ?: return@composable
-            FactDetailScreen(
-                factId = factId,
+            val filmId = backStackEntry.arguments?.getString("filmId") ?: return@composable
+            FilmDetailScreen(
+                filmId = filmId,
                 detailViewModel = detailViewModel,
                 listViewModel = listViewModel,
                 onBackClick = {

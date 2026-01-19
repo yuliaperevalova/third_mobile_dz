@@ -4,18 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.third_dz.di.AppModule
 import com.example.third_dz.navigation.NavGraph
-import com.example.third_dz.ui.viewmodel.FactDetailViewModel
-import com.example.third_dz.ui.viewmodel.FactsListViewModel
+import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
+import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 
 @Composable
-fun CatFactsApp() {
-    val listViewModel: FactsListViewModel = viewModel {
-        FactsListViewModel(AppModule.catFactsRepository)
+fun GhibliFilmsApp() {
+    val listViewModel: FilmsListViewModel = viewModel {
+        FilmsListViewModel(AppModule.ghibliFilmsRepository)
     }
     
-    val detailViewModel: FactDetailViewModel = viewModel {
-        FactDetailViewModel(AppModule.catFactsRepository)
+    val detailViewModel: FilmDetailViewModel = viewModel {
+        FilmDetailViewModel(AppModule.ghibliFilmsRepository)
     }
     
     val favouritesViewModel: FavouritesViewModel = viewModel {

@@ -1,22 +1,22 @@
 package com.example.third_dz.ui.state
 
-import com.example.third_dz.data.model.Fact
+import com.example.third_dz.data.model.Film
 
-sealed class FactsListUiState {
-    data object Loading : FactsListUiState()
-    data class Error(val message: String) : FactsListUiState()
-    data object Empty : FactsListUiState()
-    data class Success(val facts: List<Fact>) : FactsListUiState()
+sealed class FilmsListUiState {
+    data object Loading : FilmsListUiState()
+    data class Error(val message: String) : FilmsListUiState()
+    data object Empty : FilmsListUiState()
+    data class Success(val films: List<Film>) : FilmsListUiState()
 }
 
-sealed class FactDetailUiState {
-    data object Loading : FactDetailUiState()
-    data class Error(val message: String) : FactDetailUiState()
-    data class Success(val fact: Fact) : FactDetailUiState()
+sealed class FilmDetailUiState {
+    data object Loading : FilmDetailUiState()
+    data class Error(val message: String) : FilmDetailUiState()
+    data class Success(val film: Film) : FilmDetailUiState()
 }
 
 sealed class FavouritesUiState {
     data object Empty : FavouritesUiState()
-    data class Success(val facts: List<Fact>) : FavouritesUiState()
+    data class Success(val films: List<Film>) : FavouritesUiState()
 }
 
