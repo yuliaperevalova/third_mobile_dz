@@ -15,7 +15,7 @@ fun GhibliFilmsApp() {
     }
     
     val detailViewModel: FilmDetailViewModel = viewModel {
-        FilmDetailViewModel(AppModule.ghibliFilmsRepository)
+        FilmDetailViewModel(AppModule.ghibliFilmsRepository, listViewModel)
     }
     
     val favouritesViewModel: FavouritesViewModel = viewModel {

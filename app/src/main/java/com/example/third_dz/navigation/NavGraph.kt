@@ -1,6 +1,8 @@
 package com.example.third_dz.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,13 +29,18 @@ fun NavGraph(
     detailViewModel: FilmDetailViewModel,
     favouritesViewModel: FavouritesViewModel
 ) {
+    val listState by listViewModel.uiState.collectAsStateWithLifecycle()
+    val detailState by detailViewModel.uiState.collectAsStateWithLifecycle()
+    val favouritesState by favouritesViewModel.uiState.collectAsStateWithLifecycle()
+
     NavHost(
         navController = navController,
         startDestination = Screen.List.route
     ) {
         composable(Screen.List.route) {
             FilmsListScreen(
-                viewModel = listViewModel,
+                state = listState,
+                onEvent = { event -> listViewModel.onEvent(event) },
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
@@ -45,8 +52,8 @@ fun NavGraph(
         
         composable(Screen.Favourites.route) {
             FavouritesScreen(
-                listViewModel = listViewModel,
-                favouritesViewModel = favouritesViewModel,
+                state = favouritesState,
+                onEvent = { event -> favouritesViewModel.onEvent(event) },
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
@@ -67,8 +74,9 @@ fun NavGraph(
             val filmId = backStackEntry.arguments?.getString("filmId") ?: return@composable
             FilmDetailScreen(
                 filmId = filmId,
-                detailViewModel = detailViewModel,
-                listViewModel = listViewModel,
+                state = detailState,
+                onEvent = { event -> detailViewModel.onEvent(event) },
+                onLoadFilm = { id -> detailViewModel.loadFilm(id) },
                 onBackClick = {
                     navController.popBackStack()
                 }

@@ -9,31 +9,25 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.third_dz.ui.event.FilmDetailEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
-import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
-import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilmDetailScreen(
     filmId: String,
-    detailViewModel: FilmDetailViewModel,
-    listViewModel: FilmsListViewModel,
+    state: FilmDetailUiState,
+    onEvent: (FilmDetailEvent) -> Unit,
+    onLoadFilm: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-    val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
-    val isFavourite = favourites.contains(filmId)
-
     LaunchedEffect(filmId) {
-        detailViewModel.loadFilm(filmId)
+        onLoadFilm(filmId)
     }
 
     Scaffold(
@@ -46,14 +40,16 @@ fun FilmDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { listViewModel.toggleFavourite(filmId) }
-                    ) {
-                        Icon(
-                            imageVector = if (isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Toggle favourite",
-                            tint = if (isFavourite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                        )
+                    if (state is FilmDetailUiState.Success) {
+                        IconButton(
+                            onClick = { onEvent(FilmDetailEvent.ToggleFavourite(filmId)) }
+                        ) {
+                            Icon(
+                                imageVector = if (state.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Toggle favourite",
+                                tint = if (state.isFavourite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             )
@@ -64,7 +60,7 @@ fun FilmDetailScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (val state = uiState) {
+            when (state) {
                 is FilmDetailUiState.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
@@ -84,7 +80,7 @@ fun FilmDetailScreen(
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { detailViewModel.loadFilm(filmId) }) {
+                        Button(onClick = { onEvent(FilmDetailEvent.Retry) }) {
                             Text("Retry")
                         }
                     }
@@ -98,8 +94,7 @@ fun FilmDetailScreen(
                     ) {
                         item {
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(
                                     modifier = Modifier.padding(20.dp),
@@ -131,8 +126,7 @@ fun FilmDetailScreen(
                         
                         item {
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(
                                     modifier = Modifier.padding(20.dp),
@@ -179,4 +173,3 @@ private fun InfoRow(label: String, value: String) {
         )
     }
 }
-

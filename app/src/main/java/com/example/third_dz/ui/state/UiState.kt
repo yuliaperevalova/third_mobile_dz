@@ -6,13 +6,19 @@ sealed class FilmsListUiState {
     data object Loading : FilmsListUiState()
     data class Error(val message: String) : FilmsListUiState()
     data object Empty : FilmsListUiState()
-    data class Success(val films: List<Film>) : FilmsListUiState()
+    data class Success(
+        val films: List<Film>,
+        val favourites: Set<String>
+    ) : FilmsListUiState()
 }
 
 sealed class FilmDetailUiState {
     data object Loading : FilmDetailUiState()
     data class Error(val message: String) : FilmDetailUiState()
-    data class Success(val film: Film) : FilmDetailUiState()
+    data class Success(
+        val film: Film,
+        val isFavourite: Boolean
+    ) : FilmDetailUiState()
 }
 
 sealed class FavouritesUiState {

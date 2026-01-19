@@ -9,29 +9,25 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
-import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilmsListScreen(
-    viewModel: FilmsListViewModel,
+    state: FilmsListUiState,
+    onEvent: (FilmsListEvent) -> Unit,
     onFilmClick: (String) -> Unit,
     onFavouritesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val favourites by viewModel.favourites.collectAsStateWithLifecycle()
-    val isRefreshing = uiState is FilmsListUiState.Loading
-    
+    val isRefreshing = state is FilmsListUiState.Loading
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isRefreshing)
 
     Scaffold(
@@ -39,7 +35,7 @@ fun FilmsListScreen(
             TopAppBar(
                 title = { Text("Studio Ghibli Films") },
                 actions = {
-                    IconButton(onClick = { viewModel.loadFilms(forceRefresh = true) }) {
+                    IconButton(onClick = { onEvent(FilmsListEvent.Refresh) }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                     IconButton(onClick = onFavouritesClick) {
@@ -54,7 +50,7 @@ fun FilmsListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (val state = uiState) {
+            when (state) {
                 is FilmsListUiState.Loading -> {
                     if (!isRefreshing) {
                         CircularProgressIndicator(
@@ -76,7 +72,7 @@ fun FilmsListScreen(
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadFilms(forceRefresh = true) }) {
+                        Button(onClick = { onEvent(FilmsListEvent.Refresh) }) {
                             Text("Retry")
                         }
                     }
@@ -91,7 +87,7 @@ fun FilmsListScreen(
                 is FilmsListUiState.Success -> {
                     SwipeRefresh(
                         state = swipeRefreshState,
-                        onRefresh = { viewModel.loadFilms(forceRefresh = true) }
+                        onRefresh = { onEvent(FilmsListEvent.Refresh) }
                     ) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -101,9 +97,9 @@ fun FilmsListScreen(
                             items(state.films) { film ->
                                 FilmItem(
                                     film = film,
-                                    isFavourite = favourites.contains(film.id),
+                                    isFavourite = state.favourites.contains(film.id),
                                     onFilmClick = { onFilmClick(film.id) },
-                                    onFavouriteClick = { viewModel.toggleFavourite(film.id) }
+                                    onFavouriteClick = { onEvent(FilmsListEvent.ToggleFavourite(film.id)) }
                                 )
                             }
                         }

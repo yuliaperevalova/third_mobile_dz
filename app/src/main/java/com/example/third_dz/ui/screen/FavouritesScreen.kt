@@ -5,44 +5,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
-import com.example.third_dz.ui.viewmodel.FilmsListViewModel
-import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouritesScreen(
-    listViewModel: FilmsListViewModel,
-    favouritesViewModel: FavouritesViewModel,
+    state: FavouritesUiState,
+    onEvent: (FavouritesEvent) -> Unit,
     onFilmClick: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listUiState by listViewModel.uiState.collectAsStateWithLifecycle()
-    val favourites by listViewModel.favourites.collectAsStateWithLifecycle()
-    
-    val favouriteFilms = when (val state = listUiState) {
-        is com.example.third_dz.ui.state.FilmsListUiState.Success -> {
-            val favouriteFilmsList = state.films.filter { it.id in favourites }
-            if (favouriteFilmsList.isEmpty()) {
-                FavouritesUiState.Empty
-            } else {
-                FavouritesUiState.Success(favouriteFilmsList)
-            }
-        }
-        else -> FavouritesUiState.Empty
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -60,7 +41,7 @@ fun FavouritesScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (favouriteFilms) {
+            when (state) {
                 is FavouritesUiState.Empty -> {
                     Column(
                         modifier = Modifier
@@ -89,12 +70,12 @@ fun FavouritesScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(favouriteFilms.films) { film ->
+                        items(state.films) { film ->
                             FilmItem(
                                 film = film,
                                 isFavourite = true,
                                 onFilmClick = { onFilmClick(film.id) },
-                                onFavouriteClick = { favouritesViewModel.toggleFavourite(film.id) }
+                                onFavouriteClick = { onEvent(FavouritesEvent.ToggleFavourite(film.id)) }
                             )
                         }
                     }
