@@ -18,3 +18,17 @@ data class FavouriteFilmEntity(
     val rt_score: String,
     val url: String
 )
+
+fun Film.toFavouriteFilmEntity() = FavouriteFilmEntity(
+    id = id,
+    title = title,
+    original_title = original_title,
+    original_title_romanised = original_title_romanised,
+    description = description,
+    director = director,
+    producer = producer,
+    release_date = release_date,
+    running_time = running_time,
+    rt_score = rt_score,
+    url = url
+)

@@ -3,9 +3,9 @@ package com.example.third_dz.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.third_dz.data.local.FavouriteFilmDao
+import com.example.third_dz.data.local.toFavouriteFilmEntity
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.event.FilmDetailEvent
-import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,21 +50,7 @@ class FilmDetailViewModel @Inject constructor(
                         favouriteDao.delete(event.filmId)
                     } else {
                         val film = repository.getFilmById(event.filmId)
-                        favouriteDao.insert(
-                            com.example.third_dz.data.local.FavouriteFilmEntity(
-                                id = film.id,
-                                title = film.title,
-                                original_title = film.original_title,
-                                original_title_romanised = film.original_title_romanised,
-                                description = film.description,
-                                director = film.director,
-                                producer = film.producer,
-                                release_date = film.release_date,
-                                running_time = film.running_time,
-                                rt_score = film.rt_score,
-                                url = film.url
-                            )
-                        )
+                        favouriteDao.insert(film.toFavouriteFilmEntity())
                     }
                 }
             }
