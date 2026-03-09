@@ -2,6 +2,7 @@ package com.example.third_dz.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.third_dz.data.model.Film
 
 @Entity(tableName = "favourite_films")
 data class FavouriteFilmEntity(
