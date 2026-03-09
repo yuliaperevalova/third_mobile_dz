@@ -2,19 +2,25 @@ package com.example.third_dz.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.event.FilmDetailEvent
+import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class FilmDetailViewModel(
+@HiltViewModel
+class FilmDetailViewModel @Inject constructor(
     private val repository: GhibliFilmsRepository,
-    private val listViewModel: FilmsListViewModel
+    private val favouriteDao: FavouriteFilmDao
 ) : ViewModel() {
 
     private var currentFilmId: String? = null
@@ -23,13 +29,13 @@ class FilmDetailViewModel(
     val uiState: StateFlow<FilmDetailUiState> = _uiState.asStateFlow()
 
     init {
-        listViewModel.getFavouritesFlow()
+        favouriteDao.getAllFavourites()
+            .map { list -> list.map { it.id }.toSet() }
             .onEach { favourites ->
                 val currentState = _uiState.value
                 val filmId = currentFilmId
                 if (currentState is FilmDetailUiState.Success && filmId != null) {
-                    val isFavourite = favourites.contains(filmId)
-                    _uiState.value = currentState.copy(isFavourite = isFavourite)
+                    _uiState.value = currentState.copy(isFavourite = filmId in favourites)
                 }
             }
             .launchIn(viewModelScope)
@@ -39,7 +45,28 @@ class FilmDetailViewModel(
         when (event) {
             is FilmDetailEvent.Retry -> currentFilmId?.let { loadFilm(it) }
             is FilmDetailEvent.ToggleFavourite -> {
-                listViewModel.onEvent(com.example.third_dz.ui.event.FilmsListEvent.ToggleFavourite(event.filmId))
+                viewModelScope.launch {
+                    if (favouriteDao.isFavourite(event.filmId)) {
+                        favouriteDao.delete(event.filmId)
+                    } else {
+                        val film = repository.getFilmById(event.filmId)
+                        favouriteDao.insert(
+                            com.example.third_dz.data.local.FavouriteFilmEntity(
+                                id = film.id,
+                                title = film.title,
+                                original_title = film.original_title,
+                                original_title_romanised = film.original_title_romanised,
+                                description = film.description,
+                                director = film.director,
+                                producer = film.producer,
+                                release_date = film.release_date,
+                                running_time = film.running_time,
+                                rt_score = film.rt_score,
+                                url = film.url
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -50,11 +77,11 @@ class FilmDetailViewModel(
             _uiState.value = FilmDetailUiState.Loading
             try {
                 val film = repository.getFilmById(filmId)
-                val isFavourite = listViewModel.getFavourites().contains(filmId)
+                val isFavourite = favouriteDao.isFavourite(filmId)
                 _uiState.value = FilmDetailUiState.Success(film, isFavourite)
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Unknown error"
-                if (errorMessage.contains("404", ignoreCase = true) || 
+                if (errorMessage.contains("404", ignoreCase = true) ||
                     errorMessage.contains("not found", ignoreCase = true)) {
                     _uiState.value = FilmDetailUiState.Empty
                 } else {
@@ -64,4 +91,3 @@ class FilmDetailViewModel(
         }
     }
 }
-

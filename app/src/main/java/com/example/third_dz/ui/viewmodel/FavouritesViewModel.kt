@@ -2,49 +2,58 @@ package com.example.third_dz.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.third_dz.data.local.FavouriteFilmDao
+import com.example.third_dz.data.local.FavouriteFilmEntity
+import com.example.third_dz.data.model.Film
 import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
-import com.example.third_dz.ui.state.FilmsListUiState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class FavouritesViewModel(
-    private val listViewModel: FilmsListViewModel
+@HiltViewModel
+class FavouritesViewModel @Inject constructor(
+    private val favouriteDao: FavouriteFilmDao
 ) : ViewModel() {
 
-    val uiState: StateFlow<FavouritesUiState> = combine(
-        listViewModel.uiState,
-        listViewModel.getFavouritesFlow()
-    ) { listState, favourites ->
-        when (listState) {
-            is FilmsListUiState.Loading -> FavouritesUiState.Loading
-            is FilmsListUiState.Error -> FavouritesUiState.Error(listState.message)
-            is FilmsListUiState.Success -> {
-                val favouriteFilms = listState.films.filter { it.id in favourites }
-                if (favouriteFilms.isEmpty()) {
-                    FavouritesUiState.Empty
-                } else {
-                    FavouritesUiState.Success(favouriteFilms)
-                }
+    val uiState: StateFlow<FavouritesUiState> = favouriteDao.getAllFavourites()
+        .map { entities ->
+            if (entities.isEmpty()) {
+                FavouritesUiState.Empty
+            } else {
+                FavouritesUiState.Success(entities.map { it.toFilm() })
             }
-            is FilmsListUiState.Empty -> FavouritesUiState.Empty
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
-        initialValue = FavouritesUiState.Loading
-    )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FavouritesUiState.Loading)
 
     fun onEvent(event: FavouritesEvent) {
         when (event) {
-            is FavouritesEvent.Retry -> {
-                listViewModel.onEvent(com.example.third_dz.ui.event.FilmsListEvent.Refresh)
+            is FavouritesEvent.ToggleFavourite -> viewModelScope.launch {
+                favouriteDao.delete(event.filmId)
             }
-            is FavouritesEvent.ToggleFavourite -> {
-                listViewModel.onEvent(com.example.third_dz.ui.event.FilmsListEvent.ToggleFavourite(event.filmId))
-            }
+            is FavouritesEvent.Retry -> Unit
         }
     }
-}
 
+    private fun FavouriteFilmEntity.toFilm() = Film(
+        id = id,
+        title = title,
+        original_title = original_title,
+        original_title_romanised = original_title_romanised,
+        description = description,
+        director = director,
+        producer = producer,
+        release_date = release_date,
+        running_time = running_time,
+        rt_score = rt_score,
+        people = emptyList(),
+        species = emptyList(),
+        locations = emptyList(),
+        vehicles = emptyList(),
+        url = url
+    )
+}
