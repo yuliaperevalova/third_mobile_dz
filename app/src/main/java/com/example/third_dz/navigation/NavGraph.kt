@@ -2,11 +2,14 @@ package com.example.third_dz.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
@@ -23,24 +26,17 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph(
-    navController: NavHostController = rememberNavController(),
-    listViewModel: FilmsListViewModel,
-    detailViewModel: FilmDetailViewModel,
-    favouritesViewModel: FavouritesViewModel
-) {
-    val listState by listViewModel.uiState.collectAsStateWithLifecycle()
-    val detailState by detailViewModel.uiState.collectAsStateWithLifecycle()
-    val favouritesState by favouritesViewModel.uiState.collectAsStateWithLifecycle()
-
+fun NavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(
         navController = navController,
         startDestination = Screen.List.route
     ) {
         composable(Screen.List.route) {
+            val viewModel: FilmsListViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             FilmsListScreen(
-                state = listState,
-                onEvent = { event -> listViewModel.onEvent(event) },
+                state = state,
+                onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
@@ -49,11 +45,13 @@ fun NavGraph(
                 }
             )
         }
-        
+
         composable(Screen.Favourites.route) {
+            val viewModel: FavouritesViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             FavouritesScreen(
-                state = favouritesState,
-                onEvent = { event -> favouritesViewModel.onEvent(event) },
+                state = state,
+                onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
@@ -62,21 +60,22 @@ fun NavGraph(
                 }
             )
         }
-        
+
         composable(
             route = Screen.Detail().route,
             arguments = listOf(
-                androidx.navigation.navArgument("filmId") {
-                    type = androidx.navigation.NavType.StringType
+                navArgument("filmId") {
+                    type = NavType.StringType
                 }
             )
         ) { backStackEntry ->
             val filmId = backStackEntry.arguments?.getString("filmId") ?: return@composable
+            val viewModel: FilmDetailViewModel = hiltViewModel()
             FilmDetailScreen(
                 filmId = filmId,
-                state = detailState,
-                onEvent = { event -> detailViewModel.onEvent(event) },
-                onLoadFilm = { id -> detailViewModel.loadFilm(id) },
+                state = viewModel.uiState,
+                onEvent = viewModel::onEvent,
+                onLoadFilm = viewModel::loadFilm,
                 onBackClick = {
                     navController.popBackStack()
                 }
@@ -84,4 +83,3 @@ fun NavGraph(
         }
     }
 }
-

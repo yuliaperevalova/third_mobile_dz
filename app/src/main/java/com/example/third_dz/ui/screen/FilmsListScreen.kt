@@ -27,7 +27,7 @@ fun FilmsListScreen(
     onFavouritesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isRefreshing = state is FilmsListUiState.Loading
+    val isRefreshing = (state as? FilmsListUiState.Success)?.isRefreshing == true
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isRefreshing)
 
     Scaffold(
@@ -52,11 +52,9 @@ fun FilmsListScreen(
         ) {
             when (state) {
                 is FilmsListUiState.Loading -> {
-                    if (!isRefreshing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
                 is FilmsListUiState.Error -> {
                     Column(
