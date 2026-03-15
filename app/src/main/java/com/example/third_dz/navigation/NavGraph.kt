@@ -71,10 +71,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         ) { backStackEntry ->
             val filmId = backStackEntry.arguments?.getString("filmId") ?: return@composable
             val viewModel: FilmDetailViewModel = hiltViewModel()
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
             FilmDetailScreen(
                 filmId = filmId,
-                state = state,
+                state = viewModel.uiState,
                 onEvent = viewModel::onEvent,
                 onLoadFilm = viewModel::loadFilm,
                 onBackClick = {

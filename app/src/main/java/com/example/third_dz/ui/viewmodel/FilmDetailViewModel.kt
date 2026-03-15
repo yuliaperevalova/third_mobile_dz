@@ -1,5 +1,8 @@
 package com.example.third_dz.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.third_dz.data.local.FavouriteFilmDao
@@ -8,9 +11,6 @@ import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.event.FilmDetailEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -25,17 +25,17 @@ class FilmDetailViewModel @Inject constructor(
 
     private var currentFilmId: String? = null
 
-    private val _uiState = MutableStateFlow<FilmDetailUiState>(FilmDetailUiState.Loading)
-    val uiState: StateFlow<FilmDetailUiState> = _uiState.asStateFlow()
+    var uiState by mutableStateOf<FilmDetailUiState>(FilmDetailUiState.Loading)
+        private set
 
     init {
         favouriteDao.getAllFavourites()
             .map { list -> list.map { it.id }.toSet() }
             .onEach { favourites ->
-                val currentState = _uiState.value
+                val currentState = uiState
                 val filmId = currentFilmId
                 if (currentState is FilmDetailUiState.Success && filmId != null) {
-                    _uiState.value = currentState.copy(isFavourite = filmId in favourites)
+                    uiState = currentState.copy(isFavourite = filmId in favourites)
                 }
             }
             .launchIn(viewModelScope)
@@ -45,7 +45,7 @@ class FilmDetailViewModel @Inject constructor(
         when (event) {
             is FilmDetailEvent.Retry -> currentFilmId?.let { loadFilm(it) }
             is FilmDetailEvent.ToggleFavourite -> {
-                val currentState = _uiState.value
+                val currentState = uiState
                 if (currentState !is FilmDetailUiState.Success) return
                 viewModelScope.launch {
                     if (currentState.isFavourite) {
@@ -61,18 +61,18 @@ class FilmDetailViewModel @Inject constructor(
     fun loadFilm(filmId: String) {
         currentFilmId = filmId
         viewModelScope.launch {
-            _uiState.value = FilmDetailUiState.Loading
+            uiState = FilmDetailUiState.Loading
             try {
                 val film = repository.getFilmById(filmId)
                 val isFavourite = favouriteDao.isFavourite(filmId)
-                _uiState.value = FilmDetailUiState.Success(film, isFavourite)
+                uiState = FilmDetailUiState.Success(film, isFavourite)
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Unknown error"
                 if (errorMessage.contains("404", ignoreCase = true) ||
                     errorMessage.contains("not found", ignoreCase = true)) {
-                    _uiState.value = FilmDetailUiState.Empty
+                    uiState = FilmDetailUiState.Empty
                 } else {
-                    _uiState.value = FilmDetailUiState.Error(errorMessage)
+                    uiState = FilmDetailUiState.Error(errorMessage)
                 }
             }
         }
