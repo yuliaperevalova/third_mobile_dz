@@ -45,12 +45,13 @@ class FilmDetailViewModel @Inject constructor(
         when (event) {
             is FilmDetailEvent.Retry -> currentFilmId?.let { loadFilm(it) }
             is FilmDetailEvent.ToggleFavourite -> {
+                val currentState = _uiState.value
+                if (currentState !is FilmDetailUiState.Success) return
                 viewModelScope.launch {
-                    if (favouriteDao.isFavourite(event.filmId)) {
+                    if (currentState.isFavourite) {
                         favouriteDao.delete(event.filmId)
                     } else {
-                        val film = repository.getFilmById(event.filmId)
-                        favouriteDao.insert(film.toFavouriteFilmEntity())
+                        favouriteDao.insert(currentState.film.toFavouriteFilmEntity())
                     }
                 }
             }
