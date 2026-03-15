@@ -8,7 +8,8 @@ sealed class FilmsListUiState {
     data object Empty : FilmsListUiState()
     data class Success(
         val films: List<Film>,
-        val favourites: Set<String>
+        val favourites: Set<String>,
+        val isRefreshing: Boolean = false
     ) : FilmsListUiState()
 }
 

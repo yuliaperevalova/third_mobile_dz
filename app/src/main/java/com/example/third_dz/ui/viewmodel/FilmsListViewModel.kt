@@ -53,7 +53,12 @@ class FilmsListViewModel @Inject constructor(
 
     private fun loadFilms(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = FilmsListUiState.Loading
+            val currentState = _uiState.value
+            if (forceRefresh && currentState is FilmsListUiState.Success) {
+                _uiState.value = currentState.copy(isRefreshing = true)
+            } else {
+                _uiState.value = FilmsListUiState.Loading
+            }
             try {
                 val films = repository.getAllFilms(forceRefresh = forceRefresh)
                 _uiState.value = if (films.isEmpty()) {
