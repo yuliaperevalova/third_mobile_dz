@@ -1,5 +1,6 @@
 package com.example.third_dz.ui.viewmodel
 
+import app.cash.turbine.test
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FavouriteFilmEntity
 import com.example.third_dz.data.model.Film
@@ -114,6 +115,27 @@ class FilmsListViewModelTest {
         val state = vm.uiState.value
         assertTrue(state is FilmsListUiState.Error)
         assertEquals(errorMessage, (state as FilmsListUiState.Error).message)
+    }
+
+    // Test Flow-1 (Turbine): полная последовательность эмиссий Loading → Success
+    @Test
+    fun loadFilms_emitsLoadingThenSuccess() = runTest(testDispatcher) {
+        val films = listOf(makeFilm())
+        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        coEvery { mockRepository.getAllFilms(any()) } returns films
+
+        val vm = FilmsListViewModel(mockRepository, mockDao)
+
+        vm.uiState.test {
+            // StateFlow немедленно эмитит текущее значение при подписке
+            assertEquals(FilmsListUiState.Loading, awaitItem())
+            // Запускаем корутины — loadFilms() отрабатывает и обновляет state
+            testDispatcher.scheduler.advanceUntilIdle()
+            val success = awaitItem()
+            assertTrue(success is FilmsListUiState.Success)
+            assertEquals(films, (success as FilmsListUiState.Success).films)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     // Test 5 (нетривиальный): retry после ошибки действительно инициирует новый запрос к API
