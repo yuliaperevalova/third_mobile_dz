@@ -5,12 +5,14 @@ import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FavouriteFilmEntity
 import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -110,6 +112,69 @@ class FavouritesViewModelTest {
             // Устаревший результат не должен попасть в uiState — канал уже отменён
             expectNoEvents()
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // Test Flow-4: удаление фильма обновляет uiState И эмитит одноразовое событие filmRemovedEvent
+    @Test
+    fun toggleFavourite_updatesStateAndEmitsRemovedEvent() = runTest(testDispatcher) {
+        val entity = makeFavouriteEntity("1")
+        val favouritesFlow = MutableSharedFlow<List<FavouriteFilmEntity>>(replay = 1)
+        favouritesFlow.emit(listOf(entity))
+
+        every { mockDao.getAllFavourites() } returns favouritesFlow
+        coEvery { mockDao.delete(any()) } returns Unit
+
+        val vm = FavouritesViewModel(mockDao)
+
+        // WhileSubscribed требует активного подписчика, иначе upstream не работает
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.filmRemovedEvent.test {
+            vm.onEvent(FavouritesEvent.ToggleFavourite("1"))
+            // Симулируем что DAO обновил базу — список стал пустым
+            favouritesFlow.emit(emptyList())
+            advanceUntilIdle()
+
+            // uiState обновился — фильм пропал
+            assertTrue(vm.uiState.value is FavouritesUiState.Empty)
+
+            // событие сработало ровно один раз с нужным id
+            assertEquals("1", awaitItem())
+            expectNoEvents()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        stateJob.cancel()
+    }
+
+    // Test Flow-5: новый подписчик filmRemovedEvent не получает старое событие (replay = 0)
+    @Test
+    fun filmRemovedEvent_newSubscriberDoesNotReceivePastEvent() = runTest(testDispatcher) {
+        val entity = makeFavouriteEntity("1")
+        val favouritesFlow = MutableSharedFlow<List<FavouriteFilmEntity>>(replay = 1)
+        favouritesFlow.emit(listOf(entity))
+
+        every { mockDao.getAllFavourites() } returns favouritesFlow
+        coEvery { mockDao.delete(any()) } returns Unit
+
+        val vm = FavouritesViewModel(mockDao)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Удаляем фильм — событие эмитируется
+        vm.onEvent(FavouritesEvent.ToggleFavourite("1"))
+        advanceUntilIdle()
+
+        stateJob.cancel()
+
+        // Новый подписчик подключается ПОСЛЕ события — не должен ничего получить
+        vm.filmRemovedEvent.test {
+            expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
     }

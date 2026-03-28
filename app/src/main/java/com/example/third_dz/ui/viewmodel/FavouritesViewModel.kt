@@ -9,8 +9,10 @@ import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -24,6 +26,9 @@ class FavouritesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val retryTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    private val _filmRemovedEvent = MutableSharedFlow<String>()
+    val filmRemovedEvent: SharedFlow<String> = _filmRemovedEvent.asSharedFlow()
 
     val uiState: StateFlow<FavouritesUiState> = retryTrigger
         .flatMapLatest {
@@ -43,6 +48,7 @@ class FavouritesViewModel @Inject constructor(
         when (event) {
             is FavouritesEvent.ToggleFavourite -> viewModelScope.launch {
                 favouriteDao.delete(event.filmId)
+                _filmRemovedEvent.emit(event.filmId)
             }
             is FavouritesEvent.Retry -> viewModelScope.launch {
                 retryTrigger.emit(Unit)
