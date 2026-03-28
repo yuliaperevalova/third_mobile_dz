@@ -1,5 +1,6 @@
 package com.example.third_dz.ui.viewmodel
 
+import app.cash.turbine.test
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FavouriteFilmEntity
 import com.example.third_dz.ui.event.FavouritesEvent
@@ -9,6 +10,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -17,6 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -64,6 +68,50 @@ class FavouritesViewModelTest {
         job.cancel()
 
         assertTrue(collected.contains(FavouritesUiState.Empty))
+    }
+
+    // Test Flow-3 (нетривиальный): flatMapLatest отменяет устаревший запрос —
+    // результат первого (медленного) flow не попадает в uiState после retry
+    @Test
+    fun retry_cancelsStaleFlow_staleResultNeverReachesUiState() = runTest(testDispatcher) {
+        // Первый канал — "медленный": буферизированный, send() не блокируется даже без получателя
+        val staleChannel = Channel<List<FavouriteFilmEntity>>(Channel.BUFFERED)
+        // Второй канал — сразу эмитит пустой список
+        val freshChannel = Channel<List<FavouriteFilmEntity>>(Channel.UNLIMITED)
+        freshChannel.send(emptyList())
+
+        var callCount = 0
+        every { mockDao.getAllFavourites() } answers {
+            callCount++
+            if (callCount == 1) staleChannel.receiveAsFlow()
+            else freshChannel.receiveAsFlow()
+        }
+
+        val vm = FavouritesViewModel(mockDao)
+
+        vm.uiState.test {
+            assertEquals(FavouritesUiState.Loading, awaitItem())
+
+            // Запускаем корутины: первая подписка на staleChannel (ещё ничего не эмитит)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Retry — flatMapLatest отменяет staleChannel и переключается на freshChannel
+            vm.onEvent(FavouritesEvent.Retry)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // freshChannel сразу отдал пустой список → Empty
+            assertEquals(FavouritesUiState.Empty, awaitItem())
+
+            // Теперь "запаздывает" результат из staleChannel — отправляем данные в него
+            val staleEntities = listOf(makeFavouriteEntity("stale"))
+            staleChannel.send(staleEntities)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Устаревший результат не должен попасть в uiState — канал уже отменён
+            expectNoEvents()
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     // Test 7 (нетривиальный Flow): emit в retryTrigger действительно создаёт новую подписку
