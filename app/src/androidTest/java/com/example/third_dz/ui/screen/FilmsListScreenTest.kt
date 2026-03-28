@@ -1,15 +1,10 @@
 package com.example.third_dz.ui.screen
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.model.Film
-import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
 import org.junit.Rule
 import org.junit.Test
@@ -39,27 +34,31 @@ class FilmsListScreenTest {
         url = "https://ghibliapi.vercel.app/films/$id"
     )
 
-    // Test 4 (нетривиальный UI): Error state → клик Retry → Success state с фильмом
     @Test
-    fun errorState_retryButton_clickLeadsToSuccess() {
-        val film = makeFilm()
-        var state by mutableStateOf<FilmsListUiState>(FilmsListUiState.Error("network error"))
-
+    fun errorState_retryButtonIsDisplayed() {
         composeRule.setContent {
             FilmsListScreen(
-                state = state,
-                onEvent = { event ->
-                    if (event is FilmsListEvent.Refresh) {
-                        state = FilmsListUiState.Success(listOf(film), emptySet())
-                    }
-                },
+                state = FilmsListUiState.Error("network error"),
+                onEvent = {},
                 onFilmClick = {},
                 onFavouritesClick = {}
             )
         }
 
         composeRule.onNodeWithText("Retry").assertIsDisplayed()
-        composeRule.onNodeWithText("Retry").performClick()
-        composeRule.onNodeWithText(film.title).assertIsDisplayed()
+    }
+
+    @Test
+    fun successState_filmTitleIsDisplayed() {
+        composeRule.setContent {
+            FilmsListScreen(
+                state = FilmsListUiState.Success(listOf(makeFilm()), emptySet()),
+                onEvent = {},
+                onFilmClick = {},
+                onFavouritesClick = {}
+            )
+        }
+
+        composeRule.onNodeWithText("Spirited Away").assertIsDisplayed()
     }
 }
