@@ -13,6 +13,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -134,6 +135,32 @@ class FilmsListViewModelTest {
             val success = awaitItem()
             assertTrue(success is FilmsListUiState.Success)
             assertEquals(films, (success as FilmsListUiState.Success).films)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // Test Flow-2 (нетривиальный): обновление избранного в не-Success состоянии не порождает лишней эмиссии
+    // Гвард `if (currentState is Success)` должен заблокировать обновление в Error состоянии
+    @Test
+    fun favouritesUpdate_whileInErrorState_doesNotEmitExtraState() = runTest(testDispatcher) {
+        val favouritesFlow = MutableSharedFlow<List<FavouriteFilmEntity>>()
+
+        every { mockDao.getAllFavourites() } returns favouritesFlow
+        coEvery { mockRepository.getAllFilms(any()) } throws RuntimeException("network error")
+
+        val vm = FilmsListViewModel(mockRepository, mockDao)
+        advanceUntilIdle() // VM теперь в Error
+
+        vm.uiState.test {
+            assertEquals(FilmsListUiState.Error("network error"), awaitItem())
+
+            // Эмитим обновление избранного пока VM в Error
+            favouritesFlow.emit(emptyList())
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Гвард отработал — никаких лишних эмиссий
+            expectNoEvents()
+
             cancelAndIgnoreRemainingEvents()
         }
     }
