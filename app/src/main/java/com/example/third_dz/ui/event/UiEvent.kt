@@ -13,5 +13,6 @@ sealed class FilmDetailEvent {
 sealed class FavouritesEvent {
     data object Retry : FavouritesEvent()
     data class ToggleFavourite(val filmId: String) : FavouritesEvent()
+    data class SearchQueryChanged(val query: String) : FavouritesEvent()
 }
 
