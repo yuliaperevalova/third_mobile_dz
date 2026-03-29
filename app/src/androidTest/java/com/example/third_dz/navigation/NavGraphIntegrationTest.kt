@@ -21,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.local.FavouriteFilmDao
+import com.example.third_dz.data.repository.FavouritesRepository
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.util.makeFilm
 import com.example.third_dz.ui.screen.FavouritesScreen
@@ -46,6 +47,7 @@ class NavGraphIntegrationTest {
 
     private val mockRepository = mockk<GhibliFilmsRepository>()
     private val mockDao = mockk<FavouriteFilmDao>()
+    private val mockFavouritesRepository = mockk<FavouritesRepository>()
 
     // Зеркало NavGraph.kt с ручными фабриками вместо hiltViewModel() —
     // позволяет монтировать полный граф навигации без Hilt в тестах
@@ -74,7 +76,7 @@ class NavGraphIntegrationTest {
                     object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            FavouritesViewModel(mockDao) as T
+                            FavouritesViewModel(mockFavouritesRepository) as T
                     }
                 }
                 val vm = ViewModelProvider(entry, factory)[FavouritesViewModel::class.java]
@@ -141,6 +143,7 @@ class NavGraphIntegrationTest {
     fun favouritesIconClick_navigatesToFavouritesScreen() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
         coEvery { mockRepository.getAllFilms(any()) } returns emptyList()
+        every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
 
         var navController: NavHostController? = null
         composeRule.setContent {
@@ -163,6 +166,7 @@ class NavGraphIntegrationTest {
     fun backButtonFromFavourites_popsBackToList() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
         coEvery { mockRepository.getAllFilms(any()) } returns emptyList()
+        every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
 
         var navController: NavHostController? = null
         composeRule.setContent {

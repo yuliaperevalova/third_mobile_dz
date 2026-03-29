@@ -8,7 +8,7 @@
       <SelectionState runConfigName="FilmsListScreenTest">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="NavGraphIntegrationTest">
+      <SelectionState runConfigName="FavouriteFilmDaoTest">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
