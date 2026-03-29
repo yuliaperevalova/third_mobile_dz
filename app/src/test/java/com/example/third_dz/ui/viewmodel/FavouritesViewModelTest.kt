@@ -1,8 +1,8 @@
 package com.example.third_dz.ui.viewmodel
 
 import app.cash.turbine.test
-import com.example.third_dz.data.local.FavouriteFilmDao
-import com.example.third_dz.data.local.FavouriteFilmEntity
+import com.example.third_dz.data.model.Film
+import com.example.third_dz.data.repository.FavouritesRepository
 import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
 import io.mockk.coEvery
@@ -31,7 +31,7 @@ import org.junit.Test
 class FavouritesViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private val mockDao = mockk<FavouriteFilmDao>()
+    private val mockRepository = mockk<FavouritesRepository>()
 
     @Before
     fun setup() {
@@ -43,9 +43,9 @@ class FavouritesViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun makeFavouriteEntity(id: String = "1") = FavouriteFilmEntity(
+    private fun makeFilm(id: String = "1", title: String = "My Neighbor Totoro") = Film(
         id = id,
-        title = "My Neighbor Totoro",
+        title = title,
         original_title = "となりのトトロ",
         original_title_romanised = "Tonari no Totoro",
         description = "Two sisters move to the country",
@@ -54,15 +54,18 @@ class FavouritesViewModelTest {
         release_date = "1988",
         running_time = "86",
         rt_score = "93",
+        people = emptyList(),
+        species = emptyList(),
+        locations = emptyList(),
+        vehicles = emptyList(),
         url = "https://ghibliapi.vercel.app/films/$id"
     )
 
-    // Test 6: пустая БД при запуске → состояние Empty
     @Test
     fun initialState_withEmptyDb_emitsEmpty() = runTest(testDispatcher) {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRepository.getAllFavourites() } returns flowOf(emptyList())
 
-        val vm = FavouritesViewModel(mockDao)
+        val vm = FavouritesViewModel(mockRepository)
 
         val collected = mutableListOf<FavouritesUiState>()
         val job = launch { vm.uiState.collect { collected.add(it) } }
@@ -72,76 +75,61 @@ class FavouritesViewModelTest {
         assertTrue(collected.contains(FavouritesUiState.Empty))
     }
 
-    // Test Flow-3 (нетривиальный): flatMapLatest отменяет устаревший запрос —
-    // результат первого (медленного) flow не попадает в uiState после retry
     @Test
     fun retry_cancelsStaleFlow_staleResultNeverReachesUiState() = runTest(testDispatcher) {
-        // Первый канал — "медленный": буферизированный, send() не блокируется даже без получателя
-        val staleChannel = Channel<List<FavouriteFilmEntity>>(Channel.BUFFERED)
-        // Второй канал — сразу эмитит пустой список
-        val freshChannel = Channel<List<FavouriteFilmEntity>>(Channel.UNLIMITED)
+        val staleChannel = Channel<List<Film>>(Channel.BUFFERED)
+        val freshChannel = Channel<List<Film>>(Channel.UNLIMITED)
         freshChannel.send(emptyList())
 
         var callCount = 0
-        every { mockDao.getAllFavourites() } answers {
+        every { mockRepository.getAllFavourites() } answers {
             callCount++
             if (callCount == 1) staleChannel.receiveAsFlow()
             else freshChannel.receiveAsFlow()
         }
 
-        val vm = FavouritesViewModel(mockDao)
+        val vm = FavouritesViewModel(mockRepository)
 
         vm.uiState.test {
             assertEquals(FavouritesUiState.Loading, awaitItem())
 
-            // Запускаем корутины: первая подписка на staleChannel (ещё ничего не эмитит)
             testDispatcher.scheduler.advanceUntilIdle()
 
-            // Retry — flatMapLatest отменяет staleChannel и переключается на freshChannel
             vm.onEvent(FavouritesEvent.Retry)
             testDispatcher.scheduler.advanceUntilIdle()
 
-            // freshChannel сразу отдал пустой список → Empty
             assertEquals(FavouritesUiState.Empty, awaitItem())
 
-            // Теперь "запаздывает" результат из staleChannel — отправляем данные в него
-            val staleEntities = listOf(makeFavouriteEntity("stale"))
-            staleChannel.send(staleEntities)
+            val staleFilms = listOf(makeFilm("stale"))
+            staleChannel.send(staleFilms)
             testDispatcher.scheduler.advanceUntilIdle()
 
-            // Устаревший результат не должен попасть в uiState — канал уже отменён
             expectNoEvents()
 
             cancelAndIgnoreRemainingEvents()
         }
     }
 
-    // Test Flow-4: удаление фильма обновляет uiState И эмитит одноразовое событие filmRemovedEvent
     @Test
     fun toggleFavourite_updatesStateAndEmitsRemovedEvent() = runTest(testDispatcher) {
-        val entity = makeFavouriteEntity("1")
-        val favouritesFlow = MutableSharedFlow<List<FavouriteFilmEntity>>(replay = 1)
-        favouritesFlow.emit(listOf(entity))
+        val film = makeFilm("1")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(film))
 
-        every { mockDao.getAllFavourites() } returns favouritesFlow
-        coEvery { mockDao.delete(any()) } returns Unit
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+        coEvery { mockRepository.removeFavourite(any()) } returns Unit
 
-        val vm = FavouritesViewModel(mockDao)
+        val vm = FavouritesViewModel(mockRepository)
 
-        // WhileSubscribed требует активного подписчика, иначе upstream не работает
         val stateJob = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
         vm.filmRemovedEvent.test {
             vm.onEvent(FavouritesEvent.ToggleFavourite("1"))
-            // Симулируем что DAO обновил базу — список стал пустым
             favouritesFlow.emit(emptyList())
             advanceUntilIdle()
 
-            // uiState обновился — фильм пропал
             assertTrue(vm.uiState.value is FavouritesUiState.Empty)
-
-            // событие сработало ровно один раз с нужным id
             assertEquals("1", awaitItem())
             expectNoEvents()
 
@@ -151,41 +139,36 @@ class FavouritesViewModelTest {
         stateJob.cancel()
     }
 
-    // Test Flow-5: новый подписчик filmRemovedEvent не получает старое событие (replay = 0)
     @Test
     fun filmRemovedEvent_newSubscriberDoesNotReceivePastEvent() = runTest(testDispatcher) {
-        val entity = makeFavouriteEntity("1")
-        val favouritesFlow = MutableSharedFlow<List<FavouriteFilmEntity>>(replay = 1)
-        favouritesFlow.emit(listOf(entity))
+        val film = makeFilm("1")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(film))
 
-        every { mockDao.getAllFavourites() } returns favouritesFlow
-        coEvery { mockDao.delete(any()) } returns Unit
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+        coEvery { mockRepository.removeFavourite(any()) } returns Unit
 
-        val vm = FavouritesViewModel(mockDao)
+        val vm = FavouritesViewModel(mockRepository)
 
         val stateJob = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        // Удаляем фильм — событие эмитируется
         vm.onEvent(FavouritesEvent.ToggleFavourite("1"))
         advanceUntilIdle()
 
         stateJob.cancel()
 
-        // Новый подписчик подключается ПОСЛЕ события — не должен ничего получить
         vm.filmRemovedEvent.test {
             expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
     }
 
-    // Test 7 (нетривиальный Flow): emit в retryTrigger действительно создаёт новую подписку
-    // через flatMapLatest — проверяем контракт, а не только финальный state.value
     @Test
     fun retry_triggersNewFlatMapLatestSubscription() = runTest(testDispatcher) {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRepository.getAllFavourites() } returns flowOf(emptyList())
 
-        val vm = FavouritesViewModel(mockDao)
+        val vm = FavouritesViewModel(mockRepository)
 
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
@@ -195,8 +178,129 @@ class FavouritesViewModelTest {
 
         job.cancel()
 
-        // flatMapLatest при каждом новом значении retryTrigger отменяет старый поток
-        // и создаёт новую подписку — getAllFavourites должен быть вызван ровно дважды
-        verify(exactly = 2) { mockDao.getAllFavourites() }
+        verify(exactly = 2) { mockRepository.getAllFavourites() }
+    }
+
+    @Test
+    fun searchQuery_filtersFilmsByTitle() = runTest(testDispatcher) {
+        val totoro = makeFilm("1", "My Neighbor Totoro")
+        val spirited = makeFilm("2", "Spirited Away")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(totoro, spirited))
+
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+
+        val vm = FavouritesViewModel(mockRepository)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.onEvent(FavouritesEvent.SearchQueryChanged("Spirited"))
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state is FavouritesUiState.Success)
+        val films = (state as FavouritesUiState.Success).films
+        assertEquals(1, films.size)
+        assertEquals("Spirited Away", films[0].title)
+
+        stateJob.cancel()
+    }
+
+    @Test
+    fun searchQuery_caseInsensitive() = runTest(testDispatcher) {
+        val totoro = makeFilm("1", "My Neighbor Totoro")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(totoro))
+
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+
+        val vm = FavouritesViewModel(mockRepository)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.onEvent(FavouritesEvent.SearchQueryChanged("totoro"))
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value is FavouritesUiState.Success)
+
+        stateJob.cancel()
+    }
+
+    @Test
+    fun searchQuery_noMatch_emitsEmpty() = runTest(testDispatcher) {
+        val totoro = makeFilm("1", "My Neighbor Totoro")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(totoro))
+
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+
+        val vm = FavouritesViewModel(mockRepository)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.onEvent(FavouritesEvent.SearchQueryChanged("zzz"))
+        advanceUntilIdle()
+
+        assertEquals(FavouritesUiState.Empty, vm.uiState.value)
+
+        stateJob.cancel()
+    }
+
+    @Test
+    fun searchQuery_cleared_returnsFullList() = runTest(testDispatcher) {
+        val totoro = makeFilm("1", "My Neighbor Totoro")
+        val spirited = makeFilm("2", "Spirited Away")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(totoro, spirited))
+
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+
+        val vm = FavouritesViewModel(mockRepository)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.onEvent(FavouritesEvent.SearchQueryChanged("Spirited"))
+        advanceUntilIdle()
+        assertEquals(1, (vm.uiState.value as FavouritesUiState.Success).films.size)
+
+        vm.onEvent(FavouritesEvent.SearchQueryChanged(""))
+        advanceUntilIdle()
+        assertEquals(2, (vm.uiState.value as FavouritesUiState.Success).films.size)
+
+        stateJob.cancel()
+    }
+
+    @Test
+    fun daoUpdate_whileSearchActive_filtersNewResults() = runTest(testDispatcher) {
+        val totoro = makeFilm("1", "My Neighbor Totoro")
+        val spirited = makeFilm("2", "Spirited Away")
+        val favouritesFlow = MutableSharedFlow<List<Film>>(replay = 1)
+        favouritesFlow.emit(listOf(totoro))
+
+        every { mockRepository.getAllFavourites() } returns favouritesFlow
+
+        val vm = FavouritesViewModel(mockRepository)
+
+        val stateJob = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Поиск "Spirited" — нет совпадений
+        vm.onEvent(FavouritesEvent.SearchQueryChanged("Spirited"))
+        advanceUntilIdle()
+        assertEquals(FavouritesUiState.Empty, vm.uiState.value)
+
+        // DAO добавляет новый фильм — combine реагирует автоматически
+        favouritesFlow.emit(listOf(totoro, spirited))
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state is FavouritesUiState.Success)
+        assertEquals("Spirited Away", (state as FavouritesUiState.Success).films[0].title)
+
+        stateJob.cancel()
     }
 }

@@ -53,6 +53,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             FavouritesScreen(
                 state = state,
                 searchQuery = searchQuery,
+                filmRemovedEvent = viewModel.filmRemovedEvent,
                 onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
