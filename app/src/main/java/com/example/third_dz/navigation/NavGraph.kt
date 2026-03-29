@@ -49,8 +49,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Screen.Favourites.route) {
             val viewModel: FavouritesViewModel = hiltViewModel()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
+            val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
             FavouritesScreen(
                 state = state,
+                searchQuery = searchQuery,
                 onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
