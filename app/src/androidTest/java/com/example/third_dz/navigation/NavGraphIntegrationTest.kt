@@ -81,8 +81,11 @@ class NavGraphIntegrationTest {
                 }
                 val vm = ViewModelProvider(entry, factory)[FavouritesViewModel::class.java]
                 val state by vm.uiState.collectAsState()
+                val searchQuery by vm.searchQuery.collectAsState()
                 FavouritesScreen(
                     state = state,
+                    searchQuery = searchQuery,
+                    filmRemovedEvent = vm.filmRemovedEvent,
                     onEvent = vm::onEvent,
                     onFilmClick = { filmId -> navController.navigate("detail/$filmId") },
                     onBackClick = { navController.popBackStack() }
