@@ -5,7 +5,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
@@ -13,11 +15,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.util.makeFilm
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
@@ -117,5 +121,50 @@ class FilmsListScreenTest {
             composeRule.onAllNodesWithText(film.title).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(film.title).assertIsDisplayed()
+    }
+
+    // Контракт callback: клик по карточке фильма передаёт правильный filmId в onFilmClick
+    @Test
+    fun filmClick_invokesOnFilmClickWithCorrectFilmId() {
+        val film = makeFilm("1")
+        val onFilmClick = mockk<(String) -> Unit>(relaxed = true)
+
+        composeRule.setContent {
+            FilmsListScreen(
+                state = FilmsListUiState.Success(listOf(film), emptySet()),
+                onEvent = {},
+                onFilmClick = onFilmClick,
+                onFavouritesClick = {}
+            )
+        }
+
+        composeRule.waitUntil(3_000) {
+            composeRule.onAllNodesWithText(film.title).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(film.title).performClick()
+
+        verify { onFilmClick("1") }
+    }
+
+    // Контракт callback: клик по иконке избранного вызывает onFavouritesClick
+    @Test
+    fun favouritesButton_click_invokesOnFavouritesClick() {
+        val onFavouritesClick = mockk<() -> Unit>(relaxed = true)
+
+        composeRule.setContent {
+            FilmsListScreen(
+                state = FilmsListUiState.Success(emptyList(), emptySet()),
+                onEvent = {},
+                onFilmClick = {},
+                onFavouritesClick = onFavouritesClick
+            )
+        }
+
+        composeRule.waitUntil(3_000) {
+            composeRule.onAllNodesWithContentDescription("Favourites").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithContentDescription("Favourites").performClick()
+
+        verify { onFavouritesClick() }
     }
 }
