@@ -34,8 +34,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Screen.List.route) {
             val viewModel: FilmsListViewModel = hiltViewModel()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
+            val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
             FilmsListScreen(
                 state = state,
+                searchQuery = searchQuery,
                 onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
@@ -50,9 +52,11 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val viewModel: FavouritesViewModel = hiltViewModel()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+            val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
             FavouritesScreen(
                 state = state,
                 searchQuery = searchQuery,
+                sortOrder = sortOrder,
                 filmRemovedEvent = viewModel.filmRemovedEvent,
                 onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
