@@ -13,15 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilmsListScreen(
     state: FilmsListUiState,
+    searchQuery: String,
     onEvent: (FilmsListEvent) -> Unit,
     onFilmClick: (String) -> Unit,
     onFavouritesClick: () -> Unit,
@@ -45,11 +46,21 @@ fun FilmsListScreen(
             )
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { onEvent(FilmsListEvent.SearchQueryChanged(it)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Search films...") },
+                singleLine = true
+            )
+            Box(modifier = Modifier.fillMaxSize()) {
             when (state) {
                 is FilmsListUiState.Loading -> {
                     CircularProgressIndicator(

@@ -2,6 +2,7 @@ package com.example.third_dz.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.third_dz.data.model.SortOrder
 import com.example.third_dz.data.repository.FavouritesRepository
 import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,27 +27,34 @@ class FavouritesViewModel @Inject constructor(
     private val repository: FavouritesRepository
 ) : ViewModel() {
 
-    private val retryTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
-
     private val _filmRemovedEvent = MutableSharedFlow<String>()
     val filmRemovedEvent: SharedFlow<String> = _filmRemovedEvent.asSharedFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val uiState: StateFlow<FavouritesUiState> = retryTrigger
-        .flatMapLatest {
-            combine(
-                repository.getAllFavourites(),
-                _searchQuery.debounce(300).distinctUntilChanged()
-            ) { films, query ->
-                val filtered = if (query.isBlank()) films
-                               else films.filter { it.title.contains(query, ignoreCase = true) }
-                if (filtered.isEmpty()) FavouritesUiState.Empty
-                else FavouritesUiState.Success(filtered)
-            }.catch { e -> emit(FavouritesUiState.Error(e.message ?: "Unknown error")) }
+    private val _sortOrder = MutableStateFlow(SortOrder.TITLE_ASC)
+    val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
+
+    val uiState: StateFlow<FavouritesUiState> = combine(
+        repository.getAllFavourites(),
+        _searchQuery.debounce(300).distinctUntilChanged(),
+        _sortOrder
+    ) { films, query, sort ->
+        val filtered = if (query.isBlank()) films
+                       else films.filter { it.title.contains(query, ignoreCase = true) }
+        val sorted = when (sort) {
+            SortOrder.TITLE_ASC -> filtered.sortedBy { it.title }
+            SortOrder.TITLE_DESC -> filtered.sortedByDescending { it.title }
+            SortOrder.YEAR_ASC -> filtered.sortedBy { it.release_date }
+            SortOrder.YEAR_DESC -> filtered.sortedByDescending { it.release_date }
+            SortOrder.RATING_DESC -> filtered.sortedByDescending { it.rt_score.toIntOrNull() ?: 0 }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FavouritesUiState.Loading)
+        if (sorted.isEmpty()) FavouritesUiState.Empty
+        else FavouritesUiState.Success(sorted)
+    }
+    .catch { e -> emit(FavouritesUiState.Error(e.message ?: "Unknown error")) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FavouritesUiState.Loading)
 
     fun onEvent(event: FavouritesEvent) {
         when (event) {
@@ -55,10 +62,9 @@ class FavouritesViewModel @Inject constructor(
                 repository.removeFavourite(event.filmId)
                 _filmRemovedEvent.emit(event.filmId)
             }
-            is FavouritesEvent.Retry -> viewModelScope.launch {
-                retryTrigger.emit(Unit)
-            }
+            is FavouritesEvent.Retry -> Unit
             is FavouritesEvent.SearchQueryChanged -> _searchQuery.value = event.query
+            is FavouritesEvent.SortOrderChanged -> _sortOrder.value = event.order
         }
     }
 }
