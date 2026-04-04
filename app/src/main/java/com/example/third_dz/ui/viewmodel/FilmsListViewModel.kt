@@ -8,6 +8,8 @@ import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,13 +40,26 @@ class FilmsListViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _networkState = MutableStateFlow<NetworkState>(NetworkState.Loading)
+    private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    private val networkState: Flow<NetworkState> = _refreshTrigger
+        .flatMapLatest {
+            flow {
+                emit(NetworkState.Loading)
+                try {
+                    repository.refreshFilms()
+                    emit(NetworkState.Idle)
+                } catch (e: Exception) {
+                    emit(NetworkState.Error(e.message ?: "Network error"))
+                }
+            }
+        }
 
     val uiState: StateFlow<FilmsListUiState> = combine(
         repository.getFilmsFlow(),
         favouriteDao.getAllFavourites().map { list -> list.map { it.id }.toSet() },
         _searchQuery.debounce(300).distinctUntilChanged(),
-        _networkState
+        networkState
     ) { films, favourites, query, networkState ->
         val filtered = if (query.isBlank()) films
                        else films.filter { it.title.contains(query, ignoreCase = true) }
@@ -58,27 +75,11 @@ class FilmsListViewModel @Inject constructor(
     .catch { e -> emit(FilmsListUiState.Error(e.message ?: "Unknown error")) }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FilmsListUiState.Loading)
 
-    init {
-        refresh()
-    }
-
     fun onEvent(event: FilmsListEvent) {
         when (event) {
-            is FilmsListEvent.Refresh -> refresh()
+            is FilmsListEvent.Refresh -> viewModelScope.launch { _refreshTrigger.emit(Unit) }
             is FilmsListEvent.ToggleFavourite -> toggleFavourite(event.filmId)
             is FilmsListEvent.SearchQueryChanged -> _searchQuery.value = event.query
-        }
-    }
-
-    private fun refresh() {
-        viewModelScope.launch {
-            _networkState.value = NetworkState.Loading
-            try {
-                repository.refreshFilms()
-                _networkState.value = NetworkState.Idle
-            } catch (e: Exception) {
-                _networkState.value = NetworkState.Error(e.message ?: "Network error")
-            }
         }
     }
 
