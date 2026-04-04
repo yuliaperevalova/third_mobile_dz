@@ -64,8 +64,10 @@ class NavGraphIntegrationTest {
                 }
                 val vm = ViewModelProvider(entry, factory)[FilmsListViewModel::class.java]
                 val state by vm.uiState.collectAsState()
+                val searchQuery by vm.searchQuery.collectAsState()
                 FilmsListScreen(
                     state = state,
+                    searchQuery = searchQuery,
                     onEvent = vm::onEvent,
                     onFilmClick = { filmId -> navController.navigate("detail/$filmId") },
                     onFavouritesClick = { navController.navigate("favourites") }
@@ -82,9 +84,11 @@ class NavGraphIntegrationTest {
                 val vm = ViewModelProvider(entry, factory)[FavouritesViewModel::class.java]
                 val state by vm.uiState.collectAsState()
                 val searchQuery by vm.searchQuery.collectAsState()
+                val sortOrder by vm.sortOrder.collectAsState()
                 FavouritesScreen(
                     state = state,
                     searchQuery = searchQuery,
+                    sortOrder = sortOrder,
                     filmRemovedEvent = vm.filmRemovedEvent,
                     onEvent = vm::onEvent,
                     onFilmClick = { filmId -> navController.navigate("detail/$filmId") },
@@ -120,7 +124,8 @@ class NavGraphIntegrationTest {
     fun filmCardClick_navigatesToDetailScreen() {
         val film = makeFilm("42")
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } returns listOf(film)
+        every { mockRepository.getFilmsFlow() } returns flowOf(listOf(film))
+        coEvery { mockRepository.refreshFilms() } returns Unit
         coEvery { mockRepository.getFilmById("42") } returns film
         coEvery { mockDao.isFavourite("42") } returns false
 
@@ -145,7 +150,8 @@ class NavGraphIntegrationTest {
     @Test
     fun favouritesIconClick_navigatesToFavouritesScreen() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } returns emptyList()
+        every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
+        coEvery { mockRepository.refreshFilms() } returns Unit
         every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
 
         var navController: NavHostController? = null
@@ -168,7 +174,8 @@ class NavGraphIntegrationTest {
     @Test
     fun backButtonFromFavourites_popsBackToList() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } returns emptyList()
+        every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
+        coEvery { mockRepository.refreshFilms() } returns Unit
         every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
 
         var navController: NavHostController? = null
@@ -197,7 +204,8 @@ class NavGraphIntegrationTest {
     fun backButtonFromDetail_popsBackToList() {
         val film = makeFilm("7")
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } returns listOf(film)
+        every { mockRepository.getFilmsFlow() } returns flowOf(listOf(film))
+        coEvery { mockRepository.refreshFilms() } returns Unit
         coEvery { mockRepository.getFilmById("7") } returns film
         coEvery { mockDao.isFavourite("7") } returns false
 

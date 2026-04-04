@@ -1,6 +1,7 @@
 package com.example.third_dz.data.repository
 
 import com.example.third_dz.data.api.GhibliFilmsApi
+import com.example.third_dz.data.local.FilmDao
 import com.example.third_dz.data.local.toFavouriteFilmEntity
 import com.example.third_dz.data.model.Film
 import io.mockk.coEvery
@@ -13,7 +14,8 @@ import org.junit.Test
 class GhibliFilmsRepositoryTest {
 
     private val mockApi = mockk<GhibliFilmsApi>()
-    private val repository = GhibliFilmsRepository(mockApi)
+    private val mockFilmDao = mockk<FilmDao>(relaxed = true)
+    private val repository = GhibliFilmsRepository(mockApi, mockFilmDao)
 
     private fun makeFilm(id: String = "1") = Film(
         id = id,
@@ -33,19 +35,32 @@ class GhibliFilmsRepositoryTest {
         url = "https://ghibliapi.vercel.app/films/$id"
     )
 
-    // Test 8: второй вызов getAllFilms() без forceRefresh не идёт в сеть
+    // refreshFilms() запрашивает API и сохраняет все фильмы в DAO
     @Test
-    fun getAllFilms_cachesResult_doesNotCallApiSecondTime() = runTest {
+    fun refreshFilms_callsApiAndInsertsToDao() = runTest {
         val films = listOf(makeFilm("1"), makeFilm("2"))
         coEvery { mockApi.getAllFilms(any(), any()) } returns films
 
-        repository.getAllFilms()
-        repository.getAllFilms()
+        repository.refreshFilms()
 
         coVerify(exactly = 1) { mockApi.getAllFilms(any(), any()) }
+        coVerify(exactly = 1) { mockFilmDao.insertAll(any()) }
     }
 
-    // Test 9: маппинг Film → FavouriteFilmEntity сохраняет все поля без потерь
+    // getFilmById() сначала проверяет Room, при промахе идёт в сеть
+    @Test
+    fun getFilmById_fallsBackToApiWhenNotInRoom() = runTest {
+        val film = makeFilm("42")
+        coEvery { mockFilmDao.getFilmById("42") } returns null
+        coEvery { mockApi.getFilmById("42", any()) } returns film
+
+        val result = repository.getFilmById("42")
+
+        assertEquals(film.id, result.id)
+        coVerify(exactly = 1) { mockApi.getFilmById("42", any()) }
+    }
+
+    // маппинг Film → FavouriteFilmEntity сохраняет все поля без потерь
     @Test
     fun film_toFavouriteFilmEntity_mapsAllFieldsCorrectly() {
         val film = makeFilm("42")

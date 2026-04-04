@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.local.FavouriteFilmDao
+import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
@@ -22,6 +23,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
@@ -50,13 +52,16 @@ class FilmsListScreenTest {
     @Test
     fun errorState_retryButtonIsDisplayed() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } throws RuntimeException("network error")
+        every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
+        coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
         val vm = createViewModel()
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
+            val searchQuery by vm.searchQuery.collectAsState()
             FilmsListScreen(
                 state = state,
+                searchQuery = searchQuery,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -72,13 +77,16 @@ class FilmsListScreenTest {
     @Test
     fun successState_filmTitleIsDisplayed() {
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } returns listOf(makeFilm())
+        every { mockRepository.getFilmsFlow() } returns flowOf(listOf(makeFilm()))
+        coEvery { mockRepository.refreshFilms() } returns Unit
 
         val vm = createViewModel()
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
+            val searchQuery by vm.searchQuery.collectAsState()
             FilmsListScreen(
                 state = state,
+                searchQuery = searchQuery,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -96,14 +104,18 @@ class FilmsListScreenTest {
     @Test
     fun retryButton_click_triggersNewLoadAndShowsFilm() {
         val film = makeFilm()
+        val filmsFlow = MutableStateFlow<List<Film>>(emptyList())
         every { mockDao.getAllFavourites() } returns flowOf(emptyList())
-        coEvery { mockRepository.getAllFilms(any()) } throws RuntimeException("network error")
+        every { mockRepository.getFilmsFlow() } returns filmsFlow
+        coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
         val vm = createViewModel()
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
+            val searchQuery by vm.searchQuery.collectAsState()
             FilmsListScreen(
                 state = state,
+                searchQuery = searchQuery,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -114,7 +126,7 @@ class FilmsListScreenTest {
             composeRule.onAllNodesWithText("Retry").fetchSemanticsNodes().isNotEmpty()
         }
 
-        coEvery { mockRepository.getAllFilms(any()) } returns listOf(film)
+        coEvery { mockRepository.refreshFilms() } answers { filmsFlow.value = listOf(film) }
         composeRule.onNodeWithText("Retry").performClick()
 
         composeRule.waitUntil(3_000) {
@@ -132,6 +144,7 @@ class FilmsListScreenTest {
         composeRule.setContent {
             FilmsListScreen(
                 state = FilmsListUiState.Success(listOf(film), emptySet()),
+                searchQuery = "",
                 onEvent = {},
                 onFilmClick = onFilmClick,
                 onFavouritesClick = {}
@@ -154,6 +167,7 @@ class FilmsListScreenTest {
         composeRule.setContent {
             FilmsListScreen(
                 state = FilmsListUiState.Success(emptyList(), emptySet()),
+                searchQuery = "",
                 onEvent = {},
                 onFilmClick = {},
                 onFavouritesClick = onFavouritesClick
