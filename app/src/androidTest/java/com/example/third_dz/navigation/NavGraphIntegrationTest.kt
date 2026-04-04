@@ -21,8 +21,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.local.FavouriteFilmDao
-import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.util.makeFilm
 import com.example.third_dz.ui.screen.FavouritesScreen
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
@@ -46,24 +46,6 @@ class NavGraphIntegrationTest {
 
     private val mockRepository = mockk<GhibliFilmsRepository>()
     private val mockDao = mockk<FavouriteFilmDao>()
-
-    private fun makeFilm(id: String = "1") = Film(
-        id = id,
-        title = "Spirited Away",
-        original_title = "千と千尋の神隠し",
-        original_title_romanised = "Sen to Chihiro no Kamikakushi",
-        description = "A girl enters a spirit world",
-        director = "Hayao Miyazaki",
-        producer = "Toshio Suzuki",
-        release_date = "2001",
-        running_time = "125",
-        rt_score = "97",
-        people = emptyList(),
-        species = emptyList(),
-        locations = emptyList(),
-        vehicles = emptyList(),
-        url = "https://ghibliapi.vercel.app/films/$id"
-    )
 
     // Зеркало NavGraph.kt с ручными фабриками вместо hiltViewModel() —
     // позволяет монтировать полный граф навигации без Hilt в тестах

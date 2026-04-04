@@ -3,10 +3,10 @@ package com.example.third_dz.ui.viewmodel
 import app.cash.turbine.test
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FavouriteFilmEntity
-import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
+import com.example.third_dz.util.makeFilm
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -44,24 +44,6 @@ class FilmsListViewModelTest {
     }
 
     private fun emptyFavouritesFlow() = flowOf<List<FavouriteFilmEntity>>(emptyList())
-
-    private fun makeFilm(id: String = "1") = Film(
-        id = id,
-        title = "Princess Mononoke",
-        original_title = "もののけ姫",
-        original_title_romanised = "Mononoke Hime",
-        description = "A young man raised by wolves",
-        director = "Hayao Miyazaki",
-        producer = "Toshio Suzuki",
-        release_date = "1997",
-        running_time = "133",
-        rt_score = "92",
-        people = emptyList(),
-        species = emptyList(),
-        locations = emptyList(),
-        vehicles = emptyList(),
-        url = "https://ghibliapi.vercel.app/films/$id"
-    )
 
     // Test 1: начальное состояние — Loading до того, как отработают корутины
     @Test
