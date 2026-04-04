@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.example.third_dz.data.api.GhibliFilmsApi
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.local.FavouriteFilmDao
+import com.example.third_dz.data.local.FilmDao
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import dagger.Module
 import dagger.Provides
@@ -65,19 +66,27 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideGhibliFilmsRepository(api: GhibliFilmsApi): GhibliFilmsRepository {
-        return GhibliFilmsRepository(api)
-    }
-
-    @Provides
-    @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(context, AppDatabase::class.java, "ghibli_db").build()
+        return Room.databaseBuilder(context, AppDatabase::class.java, "ghibli_db")
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideFavouriteFilmDao(db: AppDatabase): FavouriteFilmDao {
         return db.favouriteFilmDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFilmDao(db: AppDatabase): FilmDao {
+        return db.filmDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGhibliFilmsRepository(api: GhibliFilmsApi, filmDao: FilmDao): GhibliFilmsRepository {
+        return GhibliFilmsRepository(api, filmDao)
     }
 }
