@@ -1,6 +1,7 @@
 package com.example.third_dz.ui.state
 
 import com.example.third_dz.data.model.Film
+import com.example.third_dz.domain.model.UserFilmRecord
 
 sealed class FilmsListUiState {
     data object Loading : FilmsListUiState()
@@ -19,7 +20,7 @@ sealed class FilmDetailUiState {
     data object Empty : FilmDetailUiState()
     data class Success(
         val film: Film,
-        val isFavourite: Boolean
+        val record: UserFilmRecord?
     ) : FilmDetailUiState()
 }
 
