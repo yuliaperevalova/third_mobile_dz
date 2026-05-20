@@ -13,9 +13,10 @@ import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.repository.UserFilmRecordRepository
+import com.example.third_dz.domain.model.UserFilmRecord
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.util.makeFilm
@@ -36,7 +37,7 @@ class FilmsListScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val mockRepository = mockk<GhibliFilmsRepository>()
-    private val mockDao = mockk<FavouriteFilmDao>()
+    private val mockRecordRepository = mockk<UserFilmRecordRepository>()
 
     private fun createViewModel(): FilmsListViewModel {
         return ViewModelProvider(
@@ -44,14 +45,14 @@ class FilmsListScreenTest {
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    FilmsListViewModel(mockRepository, mockDao) as T
+                    FilmsListViewModel(mockRepository, mockRecordRepository) as T
             }
         )[FilmsListViewModel::class.java]
     }
 
     @Test
     fun errorState_retryButtonIsDisplayed() {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
@@ -59,9 +60,11 @@ class FilmsListScreenTest {
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
             val searchQuery by vm.searchQuery.collectAsState()
+            val statusFilter by vm.statusFilter.collectAsState()
             FilmsListScreen(
                 state = state,
                 searchQuery = searchQuery,
+                statusFilter = statusFilter,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -76,7 +79,7 @@ class FilmsListScreenTest {
 
     @Test
     fun successState_filmTitleIsDisplayed() {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(listOf(makeFilm()))
         coEvery { mockRepository.refreshFilms() } returns Unit
 
@@ -84,9 +87,11 @@ class FilmsListScreenTest {
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
             val searchQuery by vm.searchQuery.collectAsState()
+            val statusFilter by vm.statusFilter.collectAsState()
             FilmsListScreen(
                 state = state,
                 searchQuery = searchQuery,
+                statusFilter = statusFilter,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -99,13 +104,11 @@ class FilmsListScreenTest {
         composeRule.onNodeWithText("Spirited Away").assertIsDisplayed()
     }
 
-    // Контракт retry на уровне приложения: ViewModel получает событие, вызывает репозиторий,
-    // состояние меняется — экран отображает результат
     @Test
     fun retryButton_click_triggersNewLoadAndShowsFilm() {
         val film = makeFilm()
         val filmsFlow = MutableStateFlow<List<Film>>(emptyList())
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns filmsFlow
         coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
@@ -113,9 +116,11 @@ class FilmsListScreenTest {
         composeRule.setContent {
             val state by vm.uiState.collectAsState()
             val searchQuery by vm.searchQuery.collectAsState()
+            val statusFilter by vm.statusFilter.collectAsState()
             FilmsListScreen(
                 state = state,
                 searchQuery = searchQuery,
+                statusFilter = statusFilter,
                 onEvent = vm::onEvent,
                 onFilmClick = {},
                 onFavouritesClick = {}
@@ -135,7 +140,6 @@ class FilmsListScreenTest {
         composeRule.onNodeWithText(film.title).assertIsDisplayed()
     }
 
-    // Контракт callback: клик по карточке фильма передаёт правильный filmId в onFilmClick
     @Test
     fun filmClick_invokesOnFilmClickWithCorrectFilmId() {
         val film = makeFilm("1")
@@ -143,8 +147,9 @@ class FilmsListScreenTest {
 
         composeRule.setContent {
             FilmsListScreen(
-                state = FilmsListUiState.Success(listOf(film), emptySet()),
+                state = FilmsListUiState.Success(listOf(film), emptyMap<String, UserFilmRecord>()),
                 searchQuery = "",
+                statusFilter = null,
                 onEvent = {},
                 onFilmClick = onFilmClick,
                 onFavouritesClick = {}
@@ -159,15 +164,15 @@ class FilmsListScreenTest {
         verify { onFilmClick("1") }
     }
 
-    // Контракт callback: клик по иконке избранного вызывает onFavouritesClick
     @Test
     fun favouritesButton_click_invokesOnFavouritesClick() {
         val onFavouritesClick = mockk<() -> Unit>(relaxed = true)
 
         composeRule.setContent {
             FilmsListScreen(
-                state = FilmsListUiState.Success(emptyList(), emptySet()),
+                state = FilmsListUiState.Success(emptyList(), emptyMap<String, UserFilmRecord>()),
                 searchQuery = "",
+                statusFilter = null,
                 onEvent = {},
                 onFilmClick = {},
                 onFavouritesClick = onFavouritesClick

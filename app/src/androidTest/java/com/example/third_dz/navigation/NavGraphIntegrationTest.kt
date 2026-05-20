@@ -20,16 +20,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.repository.FavouritesRepository
 import com.example.third_dz.data.repository.GhibliFilmsRepository
-import com.example.third_dz.util.makeFilm
+import com.example.third_dz.data.repository.UserFilmRecordRepository
+import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
+import com.example.third_dz.domain.usecase.record.SetNoteUseCase
+import com.example.third_dz.domain.usecase.record.SetRatingUseCase
+import com.example.third_dz.domain.usecase.record.SetWatchStatusUseCase
 import com.example.third_dz.ui.screen.FavouritesScreen
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
+import com.example.third_dz.util.makeFilm
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -46,11 +50,15 @@ class NavGraphIntegrationTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val mockRepository = mockk<GhibliFilmsRepository>()
-    private val mockDao = mockk<FavouriteFilmDao>()
+    private val mockRecordRepository = mockk<UserFilmRecordRepository>(relaxed = true)
     private val mockFavouritesRepository = mockk<FavouritesRepository>()
+    private val mockSetStatus = mockk<SetWatchStatusUseCase>(relaxed = true)
+    private val mockSetRating = mockk<SetRatingUseCase>(relaxed = true)
+    private val mockSetNote = mockk<SetNoteUseCase>(relaxed = true)
+    private val mockObserveRecord = mockk<ObserveFilmRecordUseCase>().also {
+        every { it.invoke(any()) } returns flowOf(null)
+    }
 
-    // Зеркало NavGraph.kt с ручными фабриками вместо hiltViewModel() —
-    // позволяет монтировать полный граф навигации без Hilt в тестах
     @Composable
     private fun TestNavGraph(navController: NavHostController) {
         NavHost(navController = navController, startDestination = "list") {
@@ -59,15 +67,17 @@ class NavGraphIntegrationTest {
                     object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            FilmsListViewModel(mockRepository, mockDao) as T
+                            FilmsListViewModel(mockRepository, mockRecordRepository) as T
                     }
                 }
                 val vm = ViewModelProvider(entry, factory)[FilmsListViewModel::class.java]
                 val state by vm.uiState.collectAsState()
                 val searchQuery by vm.searchQuery.collectAsState()
+                val statusFilter by vm.statusFilter.collectAsState()
                 FilmsListScreen(
                     state = state,
                     searchQuery = searchQuery,
+                    statusFilter = statusFilter,
                     onEvent = vm::onEvent,
                     onFilmClick = { filmId -> navController.navigate("detail/$filmId") },
                     onFavouritesClick = { navController.navigate("favourites") }
@@ -104,7 +114,13 @@ class NavGraphIntegrationTest {
                     object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            FilmDetailViewModel(mockRepository, mockDao) as T
+                            FilmDetailViewModel(
+                                mockRepository,
+                                mockSetStatus,
+                                mockSetRating,
+                                mockSetNote,
+                                mockObserveRecord
+                            ) as T
                     }
                 }
                 val vm = ViewModelProvider(entry, factory)[FilmDetailViewModel::class.java]
@@ -119,15 +135,13 @@ class NavGraphIntegrationTest {
         }
     }
 
-    // Контракт навигации: клик по карточке фильма → экран деталей с правильным filmId
     @Test
     fun filmCardClick_navigatesToDetailScreen() {
         val film = makeFilm("42")
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(listOf(film))
         coEvery { mockRepository.refreshFilms() } returns Unit
         coEvery { mockRepository.getFilmById("42") } returns film
-        coEvery { mockDao.isFavourite("42") } returns false
 
         var navController: NavHostController? = null
         composeRule.setContent {
@@ -146,10 +160,9 @@ class NavGraphIntegrationTest {
         }
     }
 
-    // Контракт навигации: клик по иконке избранного → экран Favourites
     @Test
     fun favouritesIconClick_navigatesToFavouritesScreen() {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
         every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
@@ -170,10 +183,9 @@ class NavGraphIntegrationTest {
         }
     }
 
-    // Контракт навигации: Back из Favourites → возврат на список
     @Test
     fun backButtonFromFavourites_popsBackToList() {
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
         every { mockFavouritesRepository.getAllFavourites() } returns flowOf(emptyList())
@@ -199,15 +211,13 @@ class NavGraphIntegrationTest {
         }
     }
 
-    // Контракт навигации: Back из Detail → возврат на список
     @Test
     fun backButtonFromDetail_popsBackToList() {
         val film = makeFilm("7")
-        every { mockDao.getAllFavourites() } returns flowOf(emptyList())
+        every { mockRecordRepository.observeAll() } returns flowOf(emptyList())
         every { mockRepository.getFilmsFlow() } returns flowOf(listOf(film))
         coEvery { mockRepository.refreshFilms() } returns Unit
         coEvery { mockRepository.getFilmById("7") } returns film
-        coEvery { mockDao.isFavourite("7") } returns false
 
         var navController: NavHostController? = null
         composeRule.setContent {

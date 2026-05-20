@@ -1,10 +1,11 @@
 package com.example.third_dz.ui.viewmodel
 
 import app.cash.turbine.test
-import com.example.third_dz.data.local.FavouriteFilmDao
-import com.example.third_dz.data.local.FavouriteFilmEntity
+import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.repository.UserFilmRecordRepository
+import com.example.third_dz.domain.model.UserFilmRecord
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.util.makeFilm
@@ -15,8 +16,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -33,7 +34,7 @@ class FilmsListViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val mockRepository = mockk<GhibliFilmsRepository>()
-    private val mockDao = mockk<FavouriteFilmDao>()
+    private val mockRecordRepository = mockk<UserFilmRecordRepository>()
 
     @Before
     fun setup() {
@@ -45,31 +46,27 @@ class FilmsListViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun emptyFavouritesFlow() = flowOf<List<FavouriteFilmEntity>>(emptyList())
+    private fun emptyRecordsFlow() = flowOf<List<UserFilmRecord>>(emptyList())
 
-    // Test 1: начальное состояние — Loading до того, как отработают корутины
     @Test
     fun initialState_isLoading() = runTest(testDispatcher) {
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(listOf(makeFilm()))
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
 
-        // StandardTestDispatcher не запускает корутины автоматически —
-        // проверяем состояние до вызова advanceUntilIdle()
         assertEquals(FilmsListUiState.Loading, vm.uiState.value)
     }
 
-    // Test 2: успешная загрузка → Success с правильным списком фильмов
     @Test
     fun loadFilms_success_emitsSuccessState() = runTest(testDispatcher) {
         val films = listOf(makeFilm("1"), makeFilm("2"))
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(films)
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -79,14 +76,13 @@ class FilmsListViewModelTest {
         job.cancel()
     }
 
-    // Test 3: пустой список → Empty, а не Success(emptyList())
     @Test
     fun loadFilms_emptyList_emitsEmptyState() = runTest(testDispatcher) {
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -94,33 +90,31 @@ class FilmsListViewModelTest {
         job.cancel()
     }
 
-    // Test 4: ошибка загрузки → Error с сообщением
     @Test
     fun loadFilms_error_emitsErrorState() = runTest(testDispatcher) {
-        val errorMessage = "connection timeout"
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        val msg = "connection timeout"
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
-        coEvery { mockRepository.refreshFilms() } throws RuntimeException(errorMessage)
+        coEvery { mockRepository.refreshFilms() } throws RuntimeException(msg)
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
         val state = vm.uiState.value
         assertTrue(state is FilmsListUiState.Error)
-        assertEquals(errorMessage, (state as FilmsListUiState.Error).message)
+        assertEquals(msg, (state as FilmsListUiState.Error).message)
         job.cancel()
     }
 
-    // Test Flow-1 (Turbine): полная последовательность эмиссий Loading → Success
     @Test
     fun loadFilms_emitsLoadingThenSuccess() = runTest(testDispatcher) {
         val films = listOf(makeFilm())
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(films)
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
 
         vm.uiState.test {
             assertEquals(FilmsListUiState.Loading, awaitItem())
@@ -132,42 +126,40 @@ class FilmsListViewModelTest {
         }
     }
 
-    // Test Flow-2: обновление избранного в Error состоянии не порождает лишней эмиссии
     @Test
-    fun favouritesUpdate_whileInErrorState_doesNotEmitExtraState() = runTest(testDispatcher) {
-        val favouritesFlow = MutableStateFlow<List<FavouriteFilmEntity>>(emptyList())
+    fun statusFilter_filtersFilmsByRecordStatus() = runTest(testDispatcher) {
+        val films = listOf(makeFilm("1"), makeFilm("2"))
+        val records = listOf(
+            UserFilmRecord("1", WatchStatus.WATCHED, null, null, null, 0L),
+            UserFilmRecord("2", WatchStatus.PLAN, null, null, null, 0L)
+        )
+        every { mockRecordRepository.observeAll() } returns flowOf(records)
+        every { mockRepository.getFilmsFlow() } returns flowOf(films)
+        coEvery { mockRepository.refreshFilms() } returns Unit
 
-        every { mockDao.getAllFavourites() } returns favouritesFlow
-        every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
-        coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
-
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        vm.uiState.test {
-            assertEquals(FilmsListUiState.Error("network error"), awaitItem())
+        vm.onEvent(FilmsListEvent.StatusFilterChanged(WatchStatus.WATCHED))
+        advanceUntilIdle()
 
-            // Эмитим обновление избранного пока VM в Error — стейт не меняется
-            favouritesFlow.value = emptyList()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            expectNoEvents()
-            cancelAndIgnoreRemainingEvents()
-        }
-
+        val state = vm.uiState.value
+        assertTrue(state is FilmsListUiState.Success)
+        val success = state as FilmsListUiState.Success
+        assertEquals(1, success.films.size)
+        assertEquals("1", success.films[0].id)
         job.cancel()
     }
 
-    // Test 5: retry после ошибки вызывает refreshFilms() повторно
     @Test
     fun retry_afterError_callsRefreshAgain() = runTest(testDispatcher) {
         val filmsFlow = MutableStateFlow<List<Film>>(emptyList())
-        every { mockDao.getAllFavourites() } returns emptyFavouritesFlow()
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns filmsFlow
         coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
-        val vm = FilmsListViewModel(mockRepository, mockDao)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertTrue(vm.uiState.value is FilmsListUiState.Error)

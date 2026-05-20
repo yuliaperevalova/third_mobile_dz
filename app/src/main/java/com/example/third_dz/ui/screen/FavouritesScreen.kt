@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.model.SortOrder
 import com.example.third_dz.ui.event.FavouritesEvent
 import com.example.third_dz.ui.state.FavouritesUiState
@@ -135,11 +137,10 @@ fun FavouritesScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(state.films) { film ->
-                                FilmItem(
+                                FavouriteFilmItem(
                                     film = film,
-                                    isFavourite = true,
                                     onFilmClick = { onFilmClick(film.id) },
-                                    onFavouriteClick = { onEvent(FavouritesEvent.ToggleFavourite(film.id)) }
+                                    onRemoveClick = { onEvent(FavouritesEvent.ToggleFavourite(film.id)) }
                                 )
                             }
                         }
@@ -150,3 +151,56 @@ fun FavouritesScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavouriteFilmItem(
+    film: Film,
+    onFilmClick: () -> Unit,
+    onRemoveClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onFilmClick,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(film.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(film.original_title_romanised, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(film.description, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+                }
+                IconButton(onClick = onRemoveClick) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Remove from favourites",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Director", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(film.director, style = MaterialTheme.typography.bodySmall)
+                }
+                Column {
+                    Text("Release", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(film.release_date, style = MaterialTheme.typography.bodySmall)
+                }
+                Column {
+                    Text("Score", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(film.rt_score, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
