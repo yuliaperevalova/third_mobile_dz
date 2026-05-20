@@ -9,7 +9,7 @@ sealed class FilmsListUiState {
     data object Empty : FilmsListUiState()
     data class Success(
         val films: List<Film>,
-        val favourites: Set<String>,
+        val records: Map<String, UserFilmRecord>,
         val isRefreshing: Boolean = false
     ) : FilmsListUiState()
 }

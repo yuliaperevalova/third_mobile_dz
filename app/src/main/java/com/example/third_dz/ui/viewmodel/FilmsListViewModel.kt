@@ -2,9 +2,9 @@ package com.example.third_dz.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.third_dz.data.local.FavouriteFilmDao
-import com.example.third_dz.data.local.toFavouriteFilmEntity
+import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.repository.UserFilmRecordRepository
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private sealed interface NetworkState {
@@ -34,11 +33,14 @@ private sealed interface NetworkState {
 @HiltViewModel
 class FilmsListViewModel @Inject constructor(
     private val repository: GhibliFilmsRepository,
-    private val favouriteDao: FavouriteFilmDao
+    private val recordRepository: UserFilmRecordRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _statusFilter = MutableStateFlow<WatchStatus?>(null)
+    val statusFilter: StateFlow<WatchStatus?> = _statusFilter.asStateFlow()
 
     private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
@@ -57,19 +59,26 @@ class FilmsListViewModel @Inject constructor(
 
     val uiState: StateFlow<FilmsListUiState> = combine(
         repository.getFilmsFlow(),
-        favouriteDao.getAllFavourites().map { list -> list.map { it.id }.toSet() },
+        recordRepository.observeAll().map { list -> list.associateBy { it.filmId } },
         _searchQuery.debounce(300).distinctUntilChanged(),
+        _statusFilter,
         networkState
-    ) { films, favourites, query, networkState ->
-        val filtered = if (query.isBlank()) films
-                       else films.filter { it.title.contains(query, ignoreCase = true) }
+    ) { films, records, query, statusFilter, network ->
+        val byQuery = if (query.isBlank()) films
+                      else films.filter { it.title.contains(query, ignoreCase = true) }
+        val filtered = if (statusFilter == null) byQuery
+                       else byQuery.filter { records[it.id]?.status == statusFilter }
         when {
-            networkState is NetworkState.Error && films.isEmpty() ->
-                FilmsListUiState.Error((networkState as NetworkState.Error).message)
-            networkState is NetworkState.Loading && films.isEmpty() ->
+            network is NetworkState.Error && films.isEmpty() ->
+                FilmsListUiState.Error(network.message)
+            network is NetworkState.Loading && films.isEmpty() ->
                 FilmsListUiState.Loading
             filtered.isEmpty() -> FilmsListUiState.Empty
-            else -> FilmsListUiState.Success(filtered, favourites, networkState is NetworkState.Loading)
+            else -> FilmsListUiState.Success(
+                films = filtered,
+                records = records,
+                isRefreshing = network is NetworkState.Loading
+            )
         }
     }
     .catch { e -> emit(FilmsListUiState.Error(e.message ?: "Unknown error")) }
@@ -77,20 +86,9 @@ class FilmsListViewModel @Inject constructor(
 
     fun onEvent(event: FilmsListEvent) {
         when (event) {
-            is FilmsListEvent.Refresh -> viewModelScope.launch { _refreshTrigger.emit(Unit) }
-            is FilmsListEvent.ToggleFavourite -> toggleFavourite(event.filmId)
+            is FilmsListEvent.Refresh -> _refreshTrigger.tryEmit(Unit)
             is FilmsListEvent.SearchQueryChanged -> _searchQuery.value = event.query
-        }
-    }
-
-    private fun toggleFavourite(filmId: String) {
-        viewModelScope.launch {
-            if (favouriteDao.isFavourite(filmId)) {
-                favouriteDao.delete(filmId)
-            } else {
-                val film = repository.getFilmById(filmId)
-                favouriteDao.insert(film.toFavouriteFilmEntity())
-            }
+            is FilmsListEvent.StatusFilterChanged -> _statusFilter.value = event.status
         }
     }
 }

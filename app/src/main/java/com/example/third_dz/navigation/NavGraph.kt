@@ -35,9 +35,11 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val viewModel: FilmsListViewModel = hiltViewModel()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+            val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
             FilmsListScreen(
                 state = state,
                 searchQuery = searchQuery,
+                statusFilter = statusFilter,
                 onEvent = viewModel::onEvent,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))

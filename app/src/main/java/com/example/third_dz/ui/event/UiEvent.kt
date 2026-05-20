@@ -5,8 +5,8 @@ import com.example.third_dz.data.model.SortOrder
 
 sealed class FilmsListEvent {
     data object Refresh : FilmsListEvent()
-    data class ToggleFavourite(val filmId: String) : FilmsListEvent()
     data class SearchQueryChanged(val query: String) : FilmsListEvent()
+    data class StatusFilterChanged(val status: WatchStatus?) : FilmsListEvent()
 }
 
 sealed class FilmDetailEvent {
