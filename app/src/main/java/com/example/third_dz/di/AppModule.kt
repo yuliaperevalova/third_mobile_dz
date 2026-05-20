@@ -6,6 +6,7 @@ import com.example.third_dz.data.api.GhibliFilmsApi
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FilmDao
+import com.example.third_dz.data.local.migrations.Migrations
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import dagger.Module
 import dagger.Provides
@@ -68,7 +69,7 @@ object AppModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "ghibli_db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(*Migrations.ALL)
             .build()
     }
 
