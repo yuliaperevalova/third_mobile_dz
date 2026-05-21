@@ -71,7 +71,7 @@ object AppModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "ghibli_db")
-            .addMigrations(*Migrations.ALL)
+            .addMigrations(Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4)
             .build()
     }
 
