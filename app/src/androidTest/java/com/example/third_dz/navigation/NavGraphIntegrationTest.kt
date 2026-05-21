@@ -23,6 +23,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.third_dz.data.repository.FavouritesRepository
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.data.repository.UserFilmRecordRepository
+import com.example.third_dz.domain.usecase.collection.AddFilmToCollectionUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsForFilmUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsUseCase
+import com.example.third_dz.domain.usecase.collection.RemoveFilmFromCollectionUseCase
 import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
 import com.example.third_dz.domain.usecase.record.SetNoteUseCase
 import com.example.third_dz.domain.usecase.record.SetRatingUseCase
@@ -58,6 +62,14 @@ class NavGraphIntegrationTest {
     private val mockObserveRecord = mockk<ObserveFilmRecordUseCase>().also {
         every { it.invoke(any()) } returns flowOf(null)
     }
+    private val mockObserveCollections = mockk<ObserveCollectionsUseCase>().also {
+        every { it.invoke() } returns flowOf(emptyList())
+    }
+    private val mockObserveCollectionsForFilm = mockk<ObserveCollectionsForFilmUseCase>().also {
+        every { it.invoke(any()) } returns flowOf(emptyList())
+    }
+    private val mockAddFilmToCollection = mockk<AddFilmToCollectionUseCase>(relaxed = true)
+    private val mockRemoveFilmFromCollection = mockk<RemoveFilmFromCollectionUseCase>(relaxed = true)
 
     @Composable
     private fun TestNavGraph(navController: NavHostController) {
@@ -119,7 +131,11 @@ class NavGraphIntegrationTest {
                                 mockSetStatus,
                                 mockSetRating,
                                 mockSetNote,
-                                mockObserveRecord
+                                mockObserveRecord,
+                                mockObserveCollections,
+                                mockObserveCollectionsForFilm,
+                                mockAddFilmToCollection,
+                                mockRemoveFilmFromCollection
                             ) as T
                     }
                 }
@@ -127,6 +143,9 @@ class NavGraphIntegrationTest {
                 FilmDetailScreen(
                     filmId = filmId,
                     state = vm.uiState,
+                    collections = emptyList(),
+                    memberIds = emptySet(),
+                    onToggleCollection = { _, _ -> },
                     onEvent = vm::onEvent,
                     onLoadFilm = vm::loadFilm,
                     onBackClick = { navController.popBackStack() }

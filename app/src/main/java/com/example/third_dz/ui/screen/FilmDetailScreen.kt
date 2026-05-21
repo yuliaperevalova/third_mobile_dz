@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.third_dz.data.local.CollectionEntity
 import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.domain.model.UserFilmRecord
 import com.example.third_dz.ui.event.FilmDetailEvent
@@ -29,6 +30,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun FilmDetailScreen(
     filmId: String,
     state: FilmDetailUiState,
+    collections: List<CollectionEntity>,
+    memberIds: Set<Long>,
+    onToggleCollection: (collectionId: Long, currentlyMember: Boolean) -> Unit,
     onEvent: (FilmDetailEvent) -> Unit,
     onLoadFilm: (String) -> Unit,
     onBackClick: () -> Unit,
@@ -78,6 +82,7 @@ fun FilmDetailScreen(
                     ) {
                         item { FilmHeaderCard(state) }
                         item { MyRecordCard(filmId, state.record, onEvent) }
+                        item { CollectionsCard(collections, memberIds, onToggleCollection) }
                         item { FilmInfoCard(state) }
                     }
                 }
@@ -113,6 +118,30 @@ private fun FilmInfoCard(state: FilmDetailUiState.Success) {
             InfoRow("Release Date", state.film.release_date)
             InfoRow("Running Time", "${state.film.running_time} minutes")
             InfoRow("Rotten Tomatoes Score", state.film.rt_score)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CollectionsCard(
+    collections: List<CollectionEntity>,
+    memberIds: Set<Long>,
+    onToggle: (Long, Boolean) -> Unit
+) {
+    if (collections.isEmpty()) return
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("In Collections", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Divider()
+            collections.forEach { collection ->
+                val isMember = collection.id in memberIds
+                FilterChip(
+                    selected = isMember,
+                    onClick = { onToggle(collection.id, isMember) },
+                    label = { Text(collection.name) }
+                )
+            }
         }
     }
 }

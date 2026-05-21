@@ -3,6 +3,10 @@ package com.example.third_dz.ui.viewmodel
 import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.domain.model.UserFilmRecord
+import com.example.third_dz.domain.usecase.collection.AddFilmToCollectionUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsForFilmUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsUseCase
+import com.example.third_dz.domain.usecase.collection.RemoveFilmFromCollectionUseCase
 import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
 import com.example.third_dz.domain.usecase.record.SetNoteUseCase
 import com.example.third_dz.domain.usecase.record.SetRatingUseCase
@@ -39,6 +43,14 @@ class FilmDetailViewModelTest {
     private val setRating = mockk<SetRatingUseCase>(relaxed = true)
     private val setNote = mockk<SetNoteUseCase>(relaxed = true)
     private val observeRecord = mockk<ObserveFilmRecordUseCase>()
+    private val observeCollections = mockk<ObserveCollectionsUseCase>().also {
+        every { it.invoke() } returns flowOf(emptyList())
+    }
+    private val observeCollectionsForFilm = mockk<ObserveCollectionsForFilmUseCase>().also {
+        every { it.invoke(any()) } returns flowOf(emptyList())
+    }
+    private val addFilmToCollection = mockk<AddFilmToCollectionUseCase>(relaxed = true)
+    private val removeFilmFromCollection = mockk<RemoveFilmFromCollectionUseCase>(relaxed = true)
 
     @Before
     fun setup() {
@@ -50,7 +62,11 @@ class FilmDetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm() = FilmDetailViewModel(repository, setStatus, setRating, setNote, observeRecord)
+    private fun vm() = FilmDetailViewModel(
+        repository, setStatus, setRating, setNote, observeRecord,
+        observeCollections, observeCollectionsForFilm,
+        addFilmToCollection, removeFilmFromCollection
+    )
 
     @Test
     fun loadFilm_success_emitsSuccessWithRecord() = runTest(testDispatcher) {

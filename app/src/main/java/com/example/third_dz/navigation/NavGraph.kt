@@ -13,7 +13,9 @@ import androidx.navigation.navArgument
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
+import com.example.third_dz.ui.screen.collections.CollectionDetailScreen
 import com.example.third_dz.ui.screen.collections.CollectionsListScreen
+import com.example.third_dz.ui.viewmodel.CollectionDetailViewModel
 import com.example.third_dz.ui.viewmodel.CollectionsListViewModel
 import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
@@ -23,6 +25,9 @@ sealed class Screen(val route: String) {
     data object List : Screen("list")
     data object Favourites : Screen("favourites")
     data object Collections : Screen("collections")
+    data class CollectionDetail(val collectionId: Long = 0L) : Screen("collection_detail/{collectionId}") {
+        fun createRoute(collectionId: Long) = "collection_detail/$collectionId"
+    }
     data class Detail(val filmId: String = "{filmId}") : Screen("detail/{filmId}") {
         fun createRoute(filmId: String) = "detail/$filmId"
     }
@@ -60,7 +65,32 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 collections = collections,
                 onCreate = viewModel::create,
                 onDelete = viewModel::delete,
-                onCollectionClick = { /* Phase 13 */ },
+                onCollectionClick = { id ->
+                    navController.navigate(Screen.CollectionDetail().createRoute(id))
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.CollectionDetail().route,
+            arguments = listOf(navArgument("collectionId") { type = NavType.LongType })
+        ) {
+            val viewModel: CollectionDetailViewModel = hiltViewModel()
+            val collection by viewModel.collection.collectAsStateWithLifecycle()
+            val films by viewModel.films.collectAsStateWithLifecycle()
+            CollectionDetailScreen(
+                collection = collection,
+                films = films,
+                onRename = viewModel::rename,
+                onDelete = {
+                    viewModel.delete()
+                    navController.popBackStack()
+                },
+                onRemoveFilm = viewModel::removeFilm,
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                },
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -95,9 +125,14 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         ) { backStackEntry ->
             val filmId = backStackEntry.arguments?.getString("filmId") ?: return@composable
             val viewModel: FilmDetailViewModel = hiltViewModel()
+            val collections by viewModel.collections.collectAsStateWithLifecycle()
+            val memberIds by viewModel.memberIds.collectAsStateWithLifecycle()
             FilmDetailScreen(
                 filmId = filmId,
                 state = viewModel.uiState,
+                collections = collections,
+                memberIds = memberIds,
+                onToggleCollection = { id, member -> viewModel.toggleCollection(filmId, id, member) },
                 onEvent = viewModel::onEvent,
                 onLoadFilm = viewModel::loadFilm,
                 onBackClick = {

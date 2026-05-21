@@ -5,8 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.third_dz.data.local.CollectionEntity
 import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.domain.usecase.collection.AddFilmToCollectionUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsForFilmUseCase
+import com.example.third_dz.domain.usecase.collection.ObserveCollectionsUseCase
+import com.example.third_dz.domain.usecase.collection.RemoveFilmFromCollectionUseCase
 import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
 import com.example.third_dz.domain.usecase.record.SetNoteUseCase
 import com.example.third_dz.domain.usecase.record.SetRatingUseCase
@@ -15,11 +20,15 @@ import com.example.third_dz.ui.event.FilmDetailEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -30,7 +39,11 @@ class FilmDetailViewModel @Inject constructor(
     private val setStatus: SetWatchStatusUseCase,
     private val setRating: SetRatingUseCase,
     private val setNote: SetNoteUseCase,
-    private val observeRecord: ObserveFilmRecordUseCase
+    private val observeRecord: ObserveFilmRecordUseCase,
+    observeCollections: ObserveCollectionsUseCase,
+    private val observeCollectionsForFilm: ObserveCollectionsForFilmUseCase,
+    private val addFilmToCollection: AddFilmToCollectionUseCase,
+    private val removeFilmFromCollection: RemoveFilmFromCollectionUseCase
 ) : ViewModel() {
 
     private sealed interface FilmResult {
@@ -45,6 +58,14 @@ class FilmDetailViewModel @Inject constructor(
 
     var uiState by mutableStateOf<FilmDetailUiState>(FilmDetailUiState.Loading)
         private set
+
+    val collections: StateFlow<List<CollectionEntity>> = observeCollections()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val memberIds: StateFlow<Set<Long>> = filmIdFlow
+        .filterNotNull()
+        .flatMapLatest { id -> observeCollectionsForFilm(id).map { list -> list.map { it.id }.toSet() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     init {
         filmIdFlow
@@ -88,6 +109,13 @@ class FilmDetailViewModel @Inject constructor(
             is FilmDetailEvent.SetStatus -> viewModelScope.launch { setStatus(event.filmId, event.status) }
             is FilmDetailEvent.SetRating -> viewModelScope.launch { setRating(event.filmId, event.rating) }
             is FilmDetailEvent.SetNote -> viewModelScope.launch { setNote(event.filmId, event.note) }
+        }
+    }
+
+    fun toggleCollection(filmId: String, collectionId: Long, currentlyMember: Boolean) {
+        viewModelScope.launch {
+            if (currentlyMember) removeFilmFromCollection(collectionId, filmId)
+            else addFilmToCollection(collectionId, filmId)
         }
     }
 }
