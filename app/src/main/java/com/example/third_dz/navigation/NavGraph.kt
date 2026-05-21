@@ -13,6 +13,8 @@ import androidx.navigation.navArgument
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
+import com.example.third_dz.ui.screen.collections.CollectionsListScreen
+import com.example.third_dz.ui.viewmodel.CollectionsListViewModel
 import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
@@ -20,6 +22,7 @@ import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 sealed class Screen(val route: String) {
     data object List : Screen("list")
     data object Favourites : Screen("favourites")
+    data object Collections : Screen("collections")
     data class Detail(val filmId: String = "{filmId}") : Screen("detail/{filmId}") {
         fun createRoute(filmId: String) = "detail/$filmId"
     }
@@ -47,6 +50,18 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 onFavouritesClick = {
                     navController.navigate(Screen.Favourites.route)
                 }
+            )
+        }
+
+        composable(Screen.Collections.route) {
+            val viewModel: CollectionsListViewModel = hiltViewModel()
+            val collections by viewModel.collections.collectAsStateWithLifecycle()
+            CollectionsListScreen(
+                collections = collections,
+                onCreate = viewModel::create,
+                onDelete = viewModel::delete,
+                onCollectionClick = { /* Phase 13 */ },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
