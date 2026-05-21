@@ -27,6 +27,35 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS collection (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                colorHex TEXT NOT NULL,
+                createdAt INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS collection_film_cross_ref (
+                collectionId INTEGER NOT NULL,
+                filmId TEXT NOT NULL,
+                PRIMARY KEY(collectionId, filmId),
+                FOREIGN KEY(collectionId) REFERENCES collection(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(filmId) REFERENCES film_cache(id) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_collection_film_cross_ref_filmId ON collection_film_cross_ref(filmId)"
+        )
+    }
+}
+
 object Migrations {
-    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4)
 }
