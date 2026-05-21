@@ -6,6 +6,7 @@ import com.example.third_dz.data.api.GhibliFilmsApi
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FilmDao
+import com.example.third_dz.data.local.CollectionDao
 import com.example.third_dz.data.local.UserFilmRecordDao
 import com.example.third_dz.data.local.migrations.Migrations
 import com.example.third_dz.data.repository.GhibliFilmsRepository
@@ -90,6 +91,12 @@ object AppModule {
     @Singleton
     fun provideUserFilmRecordDao(db: AppDatabase): UserFilmRecordDao {
         return db.userFilmRecordDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCollectionDao(db: AppDatabase): CollectionDao {
+        return db.collectionDao()
     }
 
     @Provides
