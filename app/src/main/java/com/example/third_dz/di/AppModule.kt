@@ -11,8 +11,11 @@ import com.example.third_dz.data.local.RecentViewDao
 import com.example.third_dz.data.local.UserFilmRecordDao
 import com.example.third_dz.data.local.migrations.Migrations
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.backup.BackupRepository
 import com.example.third_dz.util.NetworkMonitor
 import com.example.third_dz.work.WorkScheduler
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -162,4 +165,19 @@ object AppModule {
     @Singleton
     fun provideWorkScheduler(@ApplicationContext context: Context): WorkScheduler =
         WorkScheduler(context)
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = GsonBuilder().create()
+
+    @Provides
+    @Singleton
+    fun provideBackupRepository(
+        @ApplicationContext context: Context,
+        gson: Gson,
+        recordDao: UserFilmRecordDao,
+        collectionDao: CollectionDao,
+        pinnedDao: com.example.third_dz.data.local.PinnedEntityDao,
+        recentViewDao: RecentViewDao
+    ): BackupRepository = BackupRepository(context, gson, recordDao, collectionDao, pinnedDao, recentViewDao)
 }
