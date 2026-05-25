@@ -12,6 +12,7 @@ import com.example.third_dz.data.local.UserFilmRecordDao
 import com.example.third_dz.data.local.migrations.Migrations
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.util.NetworkMonitor
+import com.example.third_dz.work.WorkScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -156,4 +157,9 @@ object AppModule {
     @Singleton
     fun provideNetworkMonitor(@ApplicationContext context: Context): NetworkMonitor =
         NetworkMonitor(context)
+
+    @Provides
+    @Singleton
+    fun provideWorkScheduler(@ApplicationContext context: Context): WorkScheduler =
+        WorkScheduler(context)
 }
