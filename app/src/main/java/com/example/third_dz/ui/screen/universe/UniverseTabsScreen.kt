@@ -28,6 +28,8 @@ import com.example.third_dz.ui.viewmodel.vehicles.VehiclesListViewModel
 fun UniverseTabsScreen(
     onPersonClick: (String) -> Unit,
     onLocationClick: (String) -> Unit,
+    onSpeciesClick: (String) -> Unit,
+    onVehicleClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val peopleVm: PeopleListViewModel = hiltViewModel()
@@ -56,8 +58,8 @@ fun UniverseTabsScreen(
         when (tabIndex) {
             0 -> PeopleListScreen(people = people, onPersonClick = onPersonClick, modifier = Modifier.padding(8.dp))
             1 -> LocationsListScreen(locations = locations, onLocationClick = onLocationClick, modifier = Modifier.padding(8.dp))
-            2 -> SpeciesListScreen(species = species, modifier = Modifier.padding(8.dp))
-            3 -> VehiclesListScreen(vehicles = vehicles, modifier = Modifier.padding(8.dp))
+            2 -> SpeciesListScreen(species = species, onSpeciesClick = onSpeciesClick, modifier = Modifier.padding(8.dp))
+            3 -> VehiclesListScreen(vehicles = vehicles, onVehicleClick = onVehicleClick, modifier = Modifier.padding(8.dp))
         }
     }
 }

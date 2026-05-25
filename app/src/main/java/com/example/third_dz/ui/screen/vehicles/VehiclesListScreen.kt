@@ -1,5 +1,6 @@
 package com.example.third_dz.ui.screen.vehicles
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import com.example.third_dz.data.model.Vehicle
 @Composable
 fun VehiclesListScreen(
     vehicles: List<Vehicle>,
+    onVehicleClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -25,7 +27,10 @@ fun VehiclesListScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(vehicles, key = { it.id }) { vehicle ->
-            VehicleItem(vehicle = vehicle)
+            VehicleItem(
+                vehicle = vehicle,
+                onClick = { onVehicleClick(vehicle.id) }
+            )
         }
     }
 }
@@ -33,11 +38,13 @@ fun VehiclesListScreen(
 @Composable
 private fun VehicleItem(
     vehicle: Vehicle,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

@@ -20,6 +20,8 @@ import com.example.third_dz.ui.screen.history.HistoryScreen
 import com.example.third_dz.ui.screen.locations.LocationDetailScreen
 import com.example.third_dz.ui.screen.people.PersonDetailScreen
 import com.example.third_dz.ui.screen.settings.SettingsScreen
+import com.example.third_dz.ui.screen.species.SpeciesDetailScreen
+import com.example.third_dz.ui.screen.vehicles.VehicleDetailScreen
 import com.example.third_dz.ui.screen.universe.UniverseTabsScreen
 import com.example.third_dz.ui.viewmodel.CollectionDetailViewModel
 import com.example.third_dz.ui.viewmodel.CollectionsListViewModel
@@ -43,6 +45,12 @@ sealed class Screen(val route: String) {
     }
     data class LocationDetail(val locationId: String = "{locationId}") : Screen("location_detail/{locationId}") {
         fun createRoute(locationId: String) = "location_detail/$locationId"
+    }
+    data class SpeciesDetail(val speciesId: String = "{speciesId}") : Screen("species_detail/{speciesId}") {
+        fun createRoute(speciesId: String) = "species_detail/$speciesId"
+    }
+    data class VehicleDetail(val vehicleId: String = "{vehicleId}") : Screen("vehicle_detail/{vehicleId}") {
+        fun createRoute(vehicleId: String) = "vehicle_detail/$vehicleId"
     }
     data object Settings : Screen("settings")
     data object History : Screen("history")
@@ -149,6 +157,12 @@ fun NavGraph(
                 },
                 onLocationClick = { locationId ->
                     navController.navigate(Screen.LocationDetail().createRoute(locationId))
+                },
+                onSpeciesClick = { speciesId ->
+                    navController.navigate(Screen.SpeciesDetail().createRoute(speciesId))
+                },
+                onVehicleClick = { vehicleId ->
+                    navController.navigate(Screen.VehicleDetail().createRoute(vehicleId))
                 }
             )
         }
@@ -185,6 +199,48 @@ fun NavGraph(
             LaunchedEffect(locationId) { viewModel.loadLocation(locationId) }
             LocationDetailScreen(
                 location = location,
+                isPinned = false,
+                filmTitles = filmTitles,
+                onTogglePin = viewModel::onTogglePin,
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.SpeciesDetail().route,
+            arguments = listOf(navArgument("speciesId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val speciesId = backStackEntry.arguments?.getString("speciesId") ?: return@composable
+            val viewModel: com.example.third_dz.ui.viewmodel.species.SpeciesDetailViewModel = hiltViewModel()
+            val species by viewModel.species.collectAsStateWithLifecycle()
+            val filmTitles by viewModel.filmTitles.collectAsStateWithLifecycle()
+            LaunchedEffect(speciesId) { viewModel.loadSpecies(speciesId) }
+            SpeciesDetailScreen(
+                species = species,
+                isPinned = false,
+                filmTitles = filmTitles,
+                onTogglePin = viewModel::onTogglePin,
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.VehicleDetail().route,
+            arguments = listOf(navArgument("vehicleId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val vehicleId = backStackEntry.arguments?.getString("vehicleId") ?: return@composable
+            val viewModel: com.example.third_dz.ui.viewmodel.vehicles.VehicleDetailViewModel = hiltViewModel()
+            val vehicle by viewModel.vehicle.collectAsStateWithLifecycle()
+            val filmTitles by viewModel.filmTitles.collectAsStateWithLifecycle()
+            LaunchedEffect(vehicleId) { viewModel.loadVehicle(vehicleId) }
+            VehicleDetailScreen(
+                vehicle = vehicle,
                 isPinned = false,
                 filmTitles = filmTitles,
                 onTogglePin = viewModel::onTogglePin,

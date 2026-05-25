@@ -1,5 +1,6 @@
 package com.example.third_dz.ui.screen.species
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import com.example.third_dz.data.model.Species
 @Composable
 fun SpeciesListScreen(
     species: List<Species>,
+    onSpeciesClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -25,7 +27,10 @@ fun SpeciesListScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(species, key = { it.id }) { sp ->
-            SpeciesItem(species = sp)
+            SpeciesItem(
+                species = sp,
+                onClick = { onSpeciesClick(sp.id) }
+            )
         }
     }
 }
@@ -33,11 +38,13 @@ fun SpeciesListScreen(
 @Composable
 private fun SpeciesItem(
     species: Species,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

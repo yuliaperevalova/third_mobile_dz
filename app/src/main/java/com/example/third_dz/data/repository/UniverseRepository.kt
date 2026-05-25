@@ -82,6 +82,12 @@ class UniverseRepository @Inject constructor(
     fun observeAllVehicles(): Flow<List<Vehicle>> =
         vehiclesDao.observeAll().map { list -> list.map { it.toVehicle() } }
 
+    fun observeSpeciesById(id: String): Flow<Species?> =
+        speciesDao.observeById(id).map { it?.toSpecies() }
+
+    fun observeVehicleById(id: String): Flow<Vehicle?> =
+        vehiclesDao.observeById(id).map { it?.toVehicle() }
+
     private fun extractId(url: String): String? =
         url.substringAfterLast('/').takeIf { it.isNotBlank() }
 }
