@@ -1,0 +1,62 @@
+package com.example.third_dz.data.repository
+
+import com.example.third_dz.data.api.GhibliFilmsApi
+import com.example.third_dz.data.local.FilmDao
+import com.example.third_dz.data.model.Film
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class GhibliFilmsRepositoryTest {
+
+    private val mockApi = mockk<GhibliFilmsApi>()
+    private val mockFilmDao = mockk<FilmDao>(relaxed = true)
+    private val repository = GhibliFilmsRepository(mockApi, mockFilmDao)
+
+    private fun makeFilm(id: String = "1") = Film(
+        id = id,
+        title = "Spirited Away",
+        originalTitle = "千と千尋の神隠し",
+        originalTitleRomanised = "Sen to Chihiro no Kamikakushi",
+        description = "A girl enters a spirit world",
+        director = "Hayao Miyazaki",
+        producer = "Toshio Suzuki",
+        releaseDate = "2001",
+        runningTime = "125",
+        rtScore = "97",
+        people = emptyList(),
+        species = emptyList(),
+        locations = emptyList(),
+        vehicles = emptyList(),
+        url = "https://ghibliapi.vercel.app/films/$id"
+    )
+
+    // refreshFilms() запрашивает API и сохраняет все фильмы в DAO
+    @Test
+    fun refreshFilms_callsApiAndInsertsToDao() = runTest {
+        val films = listOf(makeFilm("1"), makeFilm("2"))
+        coEvery { mockApi.getAllFilms(any(), any()) } returns films
+
+        repository.refreshFilms()
+
+        coVerify(exactly = 1) { mockApi.getAllFilms(any(), any()) }
+        coVerify(exactly = 1) { mockFilmDao.insertAll(any()) }
+    }
+
+    // getFilmById() сначала проверяет Room, при промахе идёт в сеть
+    @Test
+    fun getFilmById_fallsBackToApiWhenNotInRoom() = runTest {
+        val film = makeFilm("42")
+        coEvery { mockFilmDao.getFilmById("42") } returns null
+        coEvery { mockApi.getFilmById("42", any()) } returns film
+
+        val result = repository.getFilmById("42")
+
+        assertEquals(film.id, result.id)
+        coVerify(exactly = 1) { mockApi.getFilmById("42", any()) }
+    }
+
+}
