@@ -170,6 +170,27 @@ class FilmsListViewModelTest {
     }
 
     @Test
+    fun offline_returnsSuccessFromCache_withOfflineFlag() = runTest(testDispatcher) {
+        val films = listOf(makeFilm("1"))
+        every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
+        every { mockRepository.getFilmsFlow() } returns flowOf(films)
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
+        every { mockNetworkMonitor.isOnline } returns flowOf(false)
+        coEvery { mockRepository.refreshFilms() } returns Unit
+
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
+        val job = launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state is FilmsListUiState.Success)
+        val success = state as FilmsListUiState.Success
+        assertEquals(films, success.films)
+        assertEquals(true, success.isOffline)
+        job.cancel()
+    }
+
+    @Test
     fun retry_afterError_callsRefreshAgain() = runTest(testDispatcher) {
         val filmsFlow = MutableStateFlow<List<Film>>(emptyList())
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
