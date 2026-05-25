@@ -110,12 +110,7 @@ class Migration2to3Test {
         createV2Database()
 
         val db = Room.databaseBuilder(ctx, AppDatabase::class.java, dbName)
-            .addMigrations(
-                Migrations.MIGRATION_2_3,
-                Migrations.MIGRATION_3_4,
-                Migrations.MIGRATION_4_5,
-                Migrations.MIGRATION_5_6
-            )
+            .addMigrations(*Migrations.ALL)
             .build()
 
         val records = db.userFilmRecordDao().observeAll().first()

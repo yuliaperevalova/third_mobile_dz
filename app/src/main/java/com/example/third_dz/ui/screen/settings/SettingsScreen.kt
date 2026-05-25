@@ -1,5 +1,8 @@
 package com.example.third_dz.ui.screen.settings
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,8 +33,17 @@ fun SettingsScreen(
     onHistoryLimitChange: (Int) -> Unit,
     onClearAllUserData: () -> Unit,
     onRefreshUniverse: () -> Unit,
+    onExportBackup: (Uri) -> Unit,
+    onImportBackup: (Uri) -> Unit,
     onBackClick: () -> Unit
 ) {
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> uri?.let(onExportBackup) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(onImportBackup) }
     var themeExpanded by remember { mutableStateOf(false) }
     var sortExpanded by remember { mutableStateOf(false) }
 
@@ -98,6 +110,20 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Refresh universe now")
+            }
+
+            OutlinedButton(
+                onClick = { exportLauncher.launch("ghibli_backup.json") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Export backup")
+            }
+
+            OutlinedButton(
+                onClick = { importLauncher.launch(arrayOf("application/json")) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Import backup")
             }
 
             OutlinedButton(

@@ -56,7 +56,7 @@ class NavGraphIntegrationTest {
         // Ждём перехода
         composeRule.waitUntil(3_000) { true }
 
-        // Проверяем, что мы на экране Collections
-        composeRule.onNodeWithText("Collections").assertExists()
+        // Проверяем, что мы на экране Collections (FAB уникален)
+        composeRule.onNodeWithContentDescription("Create collection").assertExists()
     }
 }

@@ -1,24 +1,31 @@
 package com.example.third_dz.ui.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.third_dz.data.backup.BackupRepository
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.model.SortOrder
 import com.example.third_dz.data.preferences.SettingsDataStore
 import com.example.third_dz.data.preferences.ThemeMode
 import com.example.third_dz.data.repository.UniverseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settings: SettingsDataStore,
     private val appDatabase: AppDatabase,
-    private val universeRepository: UniverseRepository
+    private val universeRepository: UniverseRepository,
+    private val backupRepository: BackupRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.themeModeFlow
@@ -69,5 +76,25 @@ class SettingsViewModel @Inject constructor(
 
     fun refreshUniverseNow() {
         viewModelScope.launch { universeRepository.refreshAll() }
+    }
+
+    fun exportBackup(destinationUri: Uri) {
+        viewModelScope.launch {
+            val file = backupRepository.export()
+            context.contentResolver.openOutputStream(destinationUri)?.use { out ->
+                file.inputStream().use { inp -> inp.copyTo(out) }
+            }
+        }
+    }
+
+    fun importBackup(sourceUri: Uri) {
+        viewModelScope.launch {
+            val tempFile = File(context.cacheDir, "import_temp.json")
+            context.contentResolver.openInputStream(sourceUri)?.use { inp ->
+                tempFile.outputStream().use { out -> inp.copyTo(out) }
+            }
+            backupRepository.import(tempFile)
+            tempFile.delete()
+        }
     }
 }

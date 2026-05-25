@@ -235,6 +235,8 @@ fun NavGraph(
                 onHistoryLimitChange = viewModel::setHistoryLimit,
                 onClearAllUserData = viewModel::clearAllUserData,
                 onRefreshUniverse = viewModel::refreshUniverseNow,
+                onExportBackup = viewModel::exportBackup,
+                onImportBackup = viewModel::importBackup,
                 onBackClick = { navController.popBackStack() }
             )
         }

@@ -1,6 +1,8 @@
 package com.example.third_dz.ui.viewmodel
 
 import app.cash.turbine.test
+import android.content.Context
+import com.example.third_dz.data.backup.BackupRepository
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.model.SortOrder
 import com.example.third_dz.data.preferences.SettingsDataStore
@@ -31,6 +33,8 @@ class SettingsViewModelTest {
     private val mockSettings = mockk<SettingsDataStore>(relaxed = true)
     private val mockDb = mockk<AppDatabase>(relaxed = true)
     private val mockUniverseRepo = mockk<UniverseRepository>(relaxed = true)
+    private val mockBackupRepo = mockk<BackupRepository>(relaxed = true)
+    private val mockContext = mockk<Context>(relaxed = true)
 
     @Before
     fun setup() {
@@ -50,7 +54,7 @@ class SettingsViewModelTest {
 
     @Test
     fun themeMode_initialValue() = runTest(testDispatcher) {
-        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo)
+        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo, mockBackupRepo, mockContext)
 
         vm.themeMode.test {
             assertEquals(ThemeMode.SYSTEM, awaitItem())
@@ -64,7 +68,7 @@ class SettingsViewModelTest {
         every { mockSettings.themeModeFlow } returns themeModeFlow
         coEvery { mockSettings.setThemeMode(any()) } answers { themeModeFlow.value = firstArg<ThemeMode>() }
 
-        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo)
+        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo, mockBackupRepo, mockContext)
 
         vm.themeMode.test {
             awaitItem()
@@ -77,7 +81,7 @@ class SettingsViewModelTest {
 
     @Test
     fun clearAllUserData_callsClearAllTables() = runTest(testDispatcher) {
-        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo)
+        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo, mockBackupRepo, mockContext)
         vm.clearAllUserData()
         advanceUntilIdle()
 
@@ -86,7 +90,7 @@ class SettingsViewModelTest {
 
     @Test
     fun refreshUniverseNow_callsRefreshAll() = runTest(testDispatcher) {
-        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo)
+        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo, mockBackupRepo, mockContext)
         vm.refreshUniverseNow()
         advanceUntilIdle()
 
@@ -95,7 +99,7 @@ class SettingsViewModelTest {
 
     @Test
     fun allSettings_haveInitialValues() = runTest(testDispatcher) {
-        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo)
+        val vm = SettingsViewModel(mockSettings, mockDb, mockUniverseRepo, mockBackupRepo, mockContext)
 
         vm.cacheTtlMinutes.test {
             assertEquals(60L, awaitItem())
