@@ -71,6 +71,11 @@ fun FilmsListScreen(
             StatusFilterRow(current = statusFilter) { selected ->
                 onEvent(FilmsListEvent.StatusFilterChanged(selected))
             }
+            if (state is FilmsListUiState.Success && state.isOffline) {
+                OfflineBanner()
+            } else if (state is FilmsListUiState.Success && state.isStale) {
+                StaleBanner()
+            }
             if (recentItems.isNotEmpty()) {
                 RecentRail(
                     recentItems = recentItems,
@@ -119,6 +124,38 @@ fun FilmsListScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun OfflineBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = MaterialTheme.shapes.small
+    ) {
+        Text(
+            text = "You are offline. Showing cached data.",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer
+        )
+    }
+}
+
+@Composable
+private fun StaleBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = MaterialTheme.shapes.small
+    ) {
+        Text(
+            text = "Data may be outdated. Pull to refresh.",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer
+        )
     }
 }
 

@@ -3,11 +3,15 @@ package com.example.third_dz.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.third_dz.data.local.WatchStatus
+import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
 import com.example.third_dz.data.repository.RecentViewRepository
 import com.example.third_dz.data.repository.UserFilmRecordRepository
+import com.example.third_dz.domain.model.UserFilmRecord
+import com.example.third_dz.domain.usecase.sync.IsCatalogueStaleUseCase
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
+import com.example.third_dz.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -39,7 +43,9 @@ class FilmsListViewModel @Inject constructor(
     private val repository: GhibliFilmsRepository,
     private val recordRepository: UserFilmRecordRepository,
     pinnedRepository: com.example.third_dz.data.repository.PinnedRepository,
-    private val recentViewRepository: RecentViewRepository
+    private val recentViewRepository: RecentViewRepository,
+    private val networkMonitor: NetworkMonitor,
+    private val isCatalogueStaleUseCase: IsCatalogueStaleUseCase
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -49,6 +55,20 @@ class FilmsListViewModel @Inject constructor(
     val statusFilter: StateFlow<WatchStatus?> = _statusFilter.asStateFlow()
 
     private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    private data class ConnectivityState(val isOnline: Boolean, val isStale: Boolean)
+    private data class CacheData(
+        val films: List<Film>,
+        val records: Map<String, UserFilmRecord>,
+        val query: String,
+        val statusFilter: WatchStatus?,
+        val network: NetworkState
+    )
+
+    private val connectivityState: Flow<ConnectivityState> = combine(
+        networkMonitor.isOnline,
+        isCatalogueStaleUseCase()
+    ) { isOnline, isStale -> ConnectivityState(isOnline, isStale) }
 
     val pinnedEntities = pinnedRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -82,26 +102,33 @@ class FilmsListViewModel @Inject constructor(
         }
 
     val uiState: StateFlow<FilmsListUiState> = combine(
-        repository.getFilmsFlow(),
-        recordRepository.observeAll().map { list -> list.associateBy { it.filmId } },
-        _searchQuery.debounce(300).distinctUntilChanged(),
-        _statusFilter,
-        networkState
-    ) { films, records, query, statusFilter, network ->
-        val byQuery = if (query.isBlank()) films
-                      else films.filter { it.title.contains(query, ignoreCase = true) }
-        val filtered = if (statusFilter == null) byQuery
-                       else byQuery.filter { records[it.id]?.status == statusFilter }
+        combine(
+            repository.getFilmsFlow(),
+            recordRepository.observeAll().map { list -> list.associateBy { it.filmId } },
+            _searchQuery.debounce(300).distinctUntilChanged(),
+            _statusFilter,
+            networkState
+        ) { films, records, query, filter, network ->
+            CacheData(films = films, records = records, query = query, statusFilter = filter, network = network)
+        },
+        connectivityState
+    ) { data, connectivity ->
+        val byQuery = if (data.query.isBlank()) data.films
+                      else data.films.filter { it.title.contains(data.query, ignoreCase = true) }
+        val filtered = if (data.statusFilter == null) byQuery
+                       else byQuery.filter { data.records[it.id]?.status == data.statusFilter }
         when {
-            network is NetworkState.Error && films.isEmpty() ->
-                FilmsListUiState.Error(network.message)
-            network is NetworkState.Loading && films.isEmpty() ->
+            data.network is NetworkState.Error && data.films.isEmpty() ->
+                FilmsListUiState.Error(data.network.message)
+            data.network is NetworkState.Loading && data.films.isEmpty() ->
                 FilmsListUiState.Loading
             filtered.isEmpty() -> FilmsListUiState.Empty
             else -> FilmsListUiState.Success(
                 films = filtered,
-                records = records,
-                isRefreshing = network is NetworkState.Loading
+                records = data.records,
+                isRefreshing = data.network is NetworkState.Loading,
+                isOffline = !connectivity.isOnline,
+                isStale = connectivity.isStale
             )
         }
     }

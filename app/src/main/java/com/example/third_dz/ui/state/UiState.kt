@@ -10,7 +10,9 @@ sealed class FilmsListUiState {
     data class Success(
         val films: List<Film>,
         val records: Map<String, UserFilmRecord>,
-        val isRefreshing: Boolean = false
+        val isRefreshing: Boolean = false,
+        val isOffline: Boolean = false,
+        val isStale: Boolean = false
     ) : FilmsListUiState()
 }
 

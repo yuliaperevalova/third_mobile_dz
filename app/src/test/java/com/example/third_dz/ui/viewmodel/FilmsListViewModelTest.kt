@@ -8,7 +8,9 @@ import com.example.third_dz.data.repository.PinnedRepository
 import com.example.third_dz.data.repository.RecentViewRepository
 import com.example.third_dz.data.repository.UserFilmRecordRepository
 import com.example.third_dz.domain.model.UserFilmRecord
+import com.example.third_dz.domain.usecase.sync.IsCatalogueStaleUseCase
 import com.example.third_dz.ui.event.FilmsListEvent
+import com.example.third_dz.util.NetworkMonitor
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.util.makeFilm
 import io.mockk.coEvery
@@ -39,11 +41,15 @@ class FilmsListViewModelTest {
     private val mockRecordRepository = mockk<UserFilmRecordRepository>()
     private val mockPinnedRepository = mockk<PinnedRepository>()
     private val mockRecentViewRepository = mockk<RecentViewRepository>()
+    private val mockNetworkMonitor = mockk<NetworkMonitor>(relaxed = true)
+    private val mockIsCatalogueStaleUseCase = mockk<IsCatalogueStaleUseCase>(relaxed = true)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         every { mockRecentViewRepository.observeRecent(any()) } returns flowOf(emptyList())
+        every { mockNetworkMonitor.isOnline } returns flowOf(true)
+        every { mockIsCatalogueStaleUseCase() } returns flowOf(false)
     }
 
     @After
@@ -60,7 +66,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
 
         assertEquals(FilmsListUiState.Loading, vm.uiState.value)
     }
@@ -73,7 +79,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -90,7 +96,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -106,7 +112,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } throws RuntimeException(msg)
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -124,7 +130,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
 
         vm.uiState.test {
             assertEquals(FilmsListUiState.Loading, awaitItem())
@@ -148,7 +154,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -171,7 +177,7 @@ class FilmsListViewModelTest {
         every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository, mockRecentViewRepository, mockNetworkMonitor, mockIsCatalogueStaleUseCase)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertTrue(vm.uiState.value is FilmsListUiState.Error)
