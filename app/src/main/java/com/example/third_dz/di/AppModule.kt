@@ -104,4 +104,40 @@ object AppModule {
     fun provideGhibliFilmsRepository(api: GhibliFilmsApi, filmDao: FilmDao): GhibliFilmsRepository {
         return GhibliFilmsRepository(api, filmDao)
     }
+
+    @Provides
+    @Singleton
+    fun providePeopleDao(db: AppDatabase) = db.peopleDao()
+
+    @Provides
+    @Singleton
+    fun provideLocationsDao(db: AppDatabase) = db.locationsDao()
+
+    @Provides
+    @Singleton
+    fun provideSpeciesDao(db: AppDatabase) = db.speciesDao()
+
+    @Provides
+    @Singleton
+    fun provideVehiclesDao(db: AppDatabase) = db.vehiclesDao()
+
+    @Provides
+    @Singleton
+    fun providePinnedEntityDao(db: AppDatabase) = db.pinnedEntityDao()
+
+    @Provides
+    @Singleton
+    fun provideUniverseRepository(
+        api: GhibliFilmsApi,
+        db: AppDatabase,
+        peopleDao: com.example.third_dz.data.local.PeopleDao,
+        locationsDao: com.example.third_dz.data.local.LocationsDao,
+        speciesDao: com.example.third_dz.data.local.SpeciesDao,
+        vehiclesDao: com.example.third_dz.data.local.VehiclesDao
+    ) = com.example.third_dz.data.repository.UniverseRepository(api, db, peopleDao, locationsDao, speciesDao, vehiclesDao)
+
+    @Provides
+    @Singleton
+    fun providePinnedRepository(dao: com.example.third_dz.data.local.PinnedEntityDao) =
+        com.example.third_dz.data.repository.PinnedRepository(dao)
 }
