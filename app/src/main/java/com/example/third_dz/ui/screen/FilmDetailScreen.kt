@@ -99,8 +99,8 @@ private fun FilmHeaderCard(state: FilmDetailUiState.Success) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(state.film.title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-            Text(state.film.original_title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(state.film.original_title_romanised, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(state.film.originalTitle, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(state.film.originalTitleRomanised, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Divider()
             Text(state.film.description, style = MaterialTheme.typography.bodyLarge)
         }
@@ -115,9 +115,9 @@ private fun FilmInfoCard(state: FilmDetailUiState.Success) {
             Divider()
             InfoRow("Director", state.film.director)
             InfoRow("Producer", state.film.producer)
-            InfoRow("Release Date", state.film.release_date)
-            InfoRow("Running Time", "${state.film.running_time} minutes")
-            InfoRow("Rotten Tomatoes Score", state.film.rt_score)
+            InfoRow("Release Date", state.film.releaseDate)
+            InfoRow("Running Time", "${state.film.runningTime} minutes")
+            InfoRow("Rotten Tomatoes Score", state.film.rtScore)
         }
     }
 }

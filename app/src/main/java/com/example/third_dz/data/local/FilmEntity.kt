@@ -1,5 +1,6 @@
 package com.example.third_dz.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.third_dz.data.model.Film
@@ -8,14 +9,19 @@ import com.example.third_dz.data.model.Film
 data class FilmEntity(
     @PrimaryKey val id: String,
     val title: String,
-    val original_title: String,
-    val original_title_romanised: String,
+    @ColumnInfo(name = "original_title")
+    val originalTitle: String,
+    @ColumnInfo(name = "original_title_romanised")
+    val originalTitleRomanised: String,
     val description: String,
     val director: String,
     val producer: String,
-    val release_date: String,
-    val running_time: String,
-    val rt_score: String,
+    @ColumnInfo(name = "release_date")
+    val releaseDate: String,
+    @ColumnInfo(name = "running_time")
+    val runningTime: String,
+    @ColumnInfo(name = "rt_score")
+    val rtScore: String,
     val url: String,
     val lastFetchedAt: Long = 0L
 )
@@ -23,14 +29,14 @@ data class FilmEntity(
 fun FilmEntity.toFilm() = Film(
     id = id,
     title = title,
-    original_title = original_title,
-    original_title_romanised = original_title_romanised,
+    originalTitle = originalTitle,
+    originalTitleRomanised = originalTitleRomanised,
     description = description,
     director = director,
     producer = producer,
-    release_date = release_date,
-    running_time = running_time,
-    rt_score = rt_score,
+    releaseDate = releaseDate,
+    runningTime = runningTime,
+    rtScore = rtScore,
     people = emptyList(),
     species = emptyList(),
     locations = emptyList(),
@@ -41,14 +47,14 @@ fun FilmEntity.toFilm() = Film(
 fun Film.toFilmEntity(lastFetchedAt: Long = 0L) = FilmEntity(
     id = id,
     title = title,
-    original_title = original_title,
-    original_title_romanised = original_title_romanised,
+    originalTitle = originalTitle,
+    originalTitleRomanised = originalTitleRomanised,
     description = description,
     director = director,
     producer = producer,
-    release_date = release_date,
-    running_time = running_time,
-    rt_score = rt_score,
+    releaseDate = releaseDate,
+    runningTime = runningTime,
+    rtScore = rtScore,
     url = url,
     lastFetchedAt = lastFetchedAt
 )

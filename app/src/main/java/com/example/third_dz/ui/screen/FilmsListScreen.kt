@@ -246,7 +246,7 @@ private fun FilmItem(
             ) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(film.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                    Text(film.original_title_romanised, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(film.originalTitleRomanised, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(film.description, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
                 }
                 if (record?.status != null) {
@@ -267,11 +267,11 @@ private fun FilmItem(
                 }
                 Column {
                     Text("Release", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(film.release_date, style = MaterialTheme.typography.bodySmall)
+                    Text(film.releaseDate, style = MaterialTheme.typography.bodySmall)
                 }
                 Column {
                     Text("Score", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(film.rt_score, style = MaterialTheme.typography.bodySmall)
+                    Text(film.rtScore, style = MaterialTheme.typography.bodySmall)
                 }
                 if (record?.rating != null) {
                     Column {

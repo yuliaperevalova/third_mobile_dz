@@ -66,14 +66,14 @@ class BackupRepositoryTest {
 
         database.filmDao().insertAll(listOf(
             com.example.third_dz.data.local.FilmEntity(
-                id = "f1", title = "Film1", original_title = "", original_title_romanised = "",
-                description = "", director = "", producer = "", release_date = "",
-                running_time = "", rt_score = "", url = "", lastFetchedAt = 0L
+                id = "f1", title = "Film1", originalTitle = "", originalTitleRomanised = "",
+                description = "", director = "", producer = "", releaseDate = "",
+                runningTime = "", rtScore = "", url = "", lastFetchedAt = 0L
             ),
             com.example.third_dz.data.local.FilmEntity(
-                id = "f2", title = "Film2", original_title = "", original_title_romanised = "",
-                description = "", director = "", producer = "", release_date = "",
-                running_time = "", rt_score = "", url = "", lastFetchedAt = 0L
+                id = "f2", title = "Film2", originalTitle = "", originalTitleRomanised = "",
+                description = "", director = "", producer = "", releaseDate = "",
+                runningTime = "", rtScore = "", url = "", lastFetchedAt = 0L
             )
         ))
 
@@ -94,14 +94,14 @@ class BackupRepositoryTest {
 
         freshDb.filmDao().insertAll(listOf(
             com.example.third_dz.data.local.FilmEntity(
-                id = "f1", title = "F1", original_title = "", original_title_romanised = "",
-                description = "", director = "", producer = "", release_date = "",
-                running_time = "", rt_score = "", url = "", lastFetchedAt = 0L
+                id = "f1", title = "F1", originalTitle = "", originalTitleRomanised = "",
+                description = "", director = "", producer = "", releaseDate = "",
+                runningTime = "", rtScore = "", url = "", lastFetchedAt = 0L
             ),
             com.example.third_dz.data.local.FilmEntity(
-                id = "f2", title = "F2", original_title = "", original_title_romanised = "",
-                description = "", director = "", producer = "", release_date = "",
-                running_time = "", rt_score = "", url = "", lastFetchedAt = 0L
+                id = "f2", title = "F2", originalTitle = "", originalTitleRomanised = "",
+                description = "", director = "", producer = "", releaseDate = "",
+                runningTime = "", rtScore = "", url = "", lastFetchedAt = 0L
             )
         ))
 

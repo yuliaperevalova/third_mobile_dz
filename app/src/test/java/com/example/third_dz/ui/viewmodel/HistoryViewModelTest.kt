@@ -61,9 +61,9 @@ class HistoryViewModelTest {
     @Test
     fun emitsItemsFromUseCase() = runTest(testDispatcher) {
         val film = Film(
-            id = "f1", title = "Film 1", original_title = "", original_title_romanised = "",
-            description = "", director = "", producer = "", release_date = "", running_time = "",
-            rt_score = "", people = emptyList(), species = emptyList(), locations = emptyList(),
+            id = "f1", title = "Film 1", originalTitle = "", originalTitleRomanised = "",
+            description = "", director = "", producer = "", releaseDate = "", runningTime = "",
+            rtScore = "", people = emptyList(), species = emptyList(), locations = emptyList(),
             vehicles = emptyList(), url = ""
         )
         val entity = RecentViewEntity(id = 1L, filmId = "f1", openedAt = 1000L)

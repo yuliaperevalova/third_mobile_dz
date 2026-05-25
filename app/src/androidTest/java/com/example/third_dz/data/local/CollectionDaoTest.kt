@@ -37,14 +37,14 @@ class CollectionDaoTest {
     private fun film(id: String) = FilmEntity(
         id = id,
         title = "T$id",
-        original_title = "O$id",
-        original_title_romanised = "OR$id",
+        originalTitle = "O$id",
+        originalTitleRomanised = "OR$id",
         description = "D$id",
         director = "Dir$id",
         producer = "Prod$id",
-        release_date = "2020",
-        running_time = "90",
-        rt_score = "85",
+        releaseDate = "2020",
+        runningTime = "90",
+        rtScore = "85",
         url = "url$id"
     )
 
