@@ -33,7 +33,8 @@ private sealed interface NetworkState {
 @HiltViewModel
 class FilmsListViewModel @Inject constructor(
     private val repository: GhibliFilmsRepository,
-    private val recordRepository: UserFilmRecordRepository
+    private val recordRepository: UserFilmRecordRepository,
+    pinnedRepository: com.example.third_dz.data.repository.PinnedRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -43,6 +44,9 @@ class FilmsListViewModel @Inject constructor(
     val statusFilter: StateFlow<WatchStatus?> = _statusFilter.asStateFlow()
 
     private val _refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    val pinnedEntities = pinnedRepository.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val networkState: Flow<NetworkState> = _refreshTrigger
         .flatMapLatest {

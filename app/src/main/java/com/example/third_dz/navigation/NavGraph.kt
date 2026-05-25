@@ -31,6 +31,16 @@ sealed class Screen(val route: String) {
     data class Detail(val filmId: String = "{filmId}") : Screen("detail/{filmId}") {
         fun createRoute(filmId: String) = "detail/$filmId"
     }
+    data object People : Screen("people")
+    data class PersonDetail(val personId: String = "{personId}") : Screen("person_detail/{personId}") {
+        fun createRoute(personId: String) = "person_detail/$personId"
+    }
+    data object Locations : Screen("locations")
+    data class LocationDetail(val locationId: String = "{locationId}") : Screen("location_detail/{locationId}") {
+        fun createRoute(locationId: String) = "location_detail/$locationId"
+    }
+    data object Species : Screen("species")
+    data object Vehicles : Screen("vehicles")
 }
 
 @Composable
@@ -139,6 +149,74 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(Screen.People.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.people.PeopleListViewModel = hiltViewModel()
+            val people by viewModel.people.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.people.PeopleListScreen(
+                people = people,
+                onPersonClick = { personId ->
+                    navController.navigate(Screen.PersonDetail().createRoute(personId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.PersonDetail().route,
+            arguments = listOf(navArgument("personId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val personId = backStackEntry.arguments?.getString("personId") ?: return@composable
+            val viewModel: com.example.third_dz.ui.viewmodel.people.PersonDetailViewModel = hiltViewModel()
+            val person by viewModel.loadPerson(personId).collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.people.PersonDetailScreen(
+                person = person,
+                isPinned = false,
+                onTogglePin = viewModel::onTogglePin,
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                }
+            )
+        }
+
+        composable(Screen.Locations.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.locations.LocationsListViewModel = hiltViewModel()
+            val locations by viewModel.locations.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.locations.LocationsListScreen(
+                locations = locations,
+                onLocationClick = { locationId ->
+                    navController.navigate(Screen.LocationDetail().createRoute(locationId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.LocationDetail().route,
+            arguments = listOf(navArgument("locationId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val locationId = backStackEntry.arguments?.getString("locationId") ?: return@composable
+            val viewModel: com.example.third_dz.ui.viewmodel.locations.LocationDetailViewModel = hiltViewModel()
+            val location by viewModel.loadLocation(locationId).collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.locations.LocationDetailScreen(
+                location = location,
+                isPinned = false,
+                onTogglePin = viewModel::onTogglePin,
+                onFilmClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                }
+            )
+        }
+
+        composable(Screen.Species.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.species.SpeciesListViewModel = hiltViewModel()
+            val species by viewModel.species.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.species.SpeciesListScreen(species = species)
+        }
+
+        composable(Screen.Vehicles.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.vehicles.VehiclesListViewModel = hiltViewModel()
+            val vehicles by viewModel.vehicles.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.vehicles.VehiclesListScreen(vehicles = vehicles)
         }
     }
 }
