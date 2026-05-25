@@ -41,6 +41,7 @@ sealed class Screen(val route: String) {
     }
     data object Species : Screen("species")
     data object Vehicles : Screen("vehicles")
+    data object Settings : Screen("settings")
     data object History : Screen("history")
 }
 
@@ -223,6 +224,33 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val viewModel: com.example.third_dz.ui.viewmodel.vehicles.VehiclesListViewModel = hiltViewModel()
             val vehicles by viewModel.vehicles.collectAsStateWithLifecycle()
             com.example.third_dz.ui.screen.vehicles.VehiclesListScreen(vehicles = vehicles)
+        }
+
+        composable(Screen.Settings.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.SettingsViewModel = hiltViewModel()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val cacheTtlMinutes by viewModel.cacheTtlMinutes.collectAsStateWithLifecycle()
+            val wifiOnlyRefresh by viewModel.wifiOnlyRefresh.collectAsStateWithLifecycle()
+            val refreshIntervalHours by viewModel.refreshIntervalHours.collectAsStateWithLifecycle()
+            val defaultListSort by viewModel.defaultListSort.collectAsStateWithLifecycle()
+            val historyLimit by viewModel.historyLimit.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.settings.SettingsScreen(
+                themeMode = themeMode,
+                cacheTtlMinutes = cacheTtlMinutes,
+                wifiOnlyRefresh = wifiOnlyRefresh,
+                refreshIntervalHours = refreshIntervalHours,
+                defaultListSort = defaultListSort,
+                historyLimit = historyLimit,
+                onThemeModeChange = viewModel::setThemeMode,
+                onCacheTtlMinutesChange = viewModel::setCacheTtlMinutes,
+                onWifiOnlyRefreshChange = viewModel::setWifiOnlyRefresh,
+                onRefreshIntervalHoursChange = viewModel::setRefreshIntervalHours,
+                onDefaultListSortChange = viewModel::setDefaultListSort,
+                onHistoryLimitChange = viewModel::setHistoryLimit,
+                onClearAllUserData = viewModel::clearAllUserData,
+                onRefreshUniverse = viewModel::refreshUniverseNow,
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
         composable(Screen.History.route) {
