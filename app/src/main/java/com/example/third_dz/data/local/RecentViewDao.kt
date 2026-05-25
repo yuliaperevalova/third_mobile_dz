@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RecentViewDao {
     @Insert
-    suspend fun insert(entity: RecentViewEntity)
+    suspend fun insert(entity: RecentViewEntity): Long
 
     @Query("SELECT * FROM recent_view ORDER BY openedAt DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<RecentViewEntity>>
