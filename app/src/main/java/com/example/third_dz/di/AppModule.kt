@@ -11,6 +11,7 @@ import com.example.third_dz.data.local.RecentViewDao
 import com.example.third_dz.data.local.UserFilmRecordDao
 import com.example.third_dz.data.local.migrations.Migrations
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.util.NetworkMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -150,4 +151,9 @@ object AppModule {
     @Singleton
     fun provideRecentViewRepository(dao: RecentViewDao) =
         com.example.third_dz.data.repository.RecentViewRepository(dao)
+
+    @Provides
+    @Singleton
+    fun provideNetworkMonitor(@ApplicationContext context: Context): NetworkMonitor =
+        NetworkMonitor(context)
 }
