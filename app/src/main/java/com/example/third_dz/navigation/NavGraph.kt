@@ -2,6 +2,7 @@ package com.example.third_dz.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -15,11 +16,18 @@ import com.example.third_dz.ui.screen.FilmsListScreen
 import com.example.third_dz.ui.screen.FavouritesScreen
 import com.example.third_dz.ui.screen.collections.CollectionDetailScreen
 import com.example.third_dz.ui.screen.collections.CollectionsListScreen
+import com.example.third_dz.ui.screen.history.HistoryScreen
+import com.example.third_dz.ui.screen.locations.LocationDetailScreen
+import com.example.third_dz.ui.screen.people.PersonDetailScreen
+import com.example.third_dz.ui.screen.settings.SettingsScreen
+import com.example.third_dz.ui.screen.universe.UniverseTabsScreen
 import com.example.third_dz.ui.viewmodel.CollectionDetailViewModel
 import com.example.third_dz.ui.viewmodel.CollectionsListViewModel
 import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
 import com.example.third_dz.ui.viewmodel.FavouritesViewModel
+import com.example.third_dz.ui.viewmodel.HistoryViewModel
+import com.example.third_dz.ui.viewmodel.SettingsViewModel
 
 sealed class Screen(val route: String) {
     data object List : Screen("list")
@@ -31,25 +39,26 @@ sealed class Screen(val route: String) {
     data class Detail(val filmId: String = "{filmId}") : Screen("detail/{filmId}") {
         fun createRoute(filmId: String) = "detail/$filmId"
     }
-    data object People : Screen("people")
+    data object Universe : Screen("universe")
     data class PersonDetail(val personId: String = "{personId}") : Screen("person_detail/{personId}") {
         fun createRoute(personId: String) = "person_detail/$personId"
     }
-    data object Locations : Screen("locations")
     data class LocationDetail(val locationId: String = "{locationId}") : Screen("location_detail/{locationId}") {
         fun createRoute(locationId: String) = "location_detail/$locationId"
     }
-    data object Species : Screen("species")
-    data object Vehicles : Screen("vehicles")
     data object Settings : Screen("settings")
     data object History : Screen("history")
 }
 
 @Composable
-fun NavGraph(navController: NavHostController = rememberNavController()) {
+fun NavGraph(
+    navController: NavHostController = rememberNavController(),
+    modifier: Modifier = Modifier
+) {
     NavHost(
         navController = navController,
-        startDestination = Screen.List.route
+        startDestination = Screen.List.route,
+        modifier = modifier
     ) {
         composable(Screen.List.route) {
             val viewModel: FilmsListViewModel = hiltViewModel()
@@ -158,13 +167,13 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        composable(Screen.People.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.people.PeopleListViewModel = hiltViewModel()
-            val people by viewModel.people.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.people.PeopleListScreen(
-                people = people,
+        composable(Screen.Universe.route) {
+            UniverseTabsScreen(
                 onPersonClick = { personId ->
                     navController.navigate(Screen.PersonDetail().createRoute(personId))
+                },
+                onLocationClick = { locationId ->
+                    navController.navigate(Screen.LocationDetail().createRoute(locationId))
                 }
             )
         }
@@ -176,23 +185,12 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val personId = backStackEntry.arguments?.getString("personId") ?: return@composable
             val viewModel: com.example.third_dz.ui.viewmodel.people.PersonDetailViewModel = hiltViewModel()
             val person by viewModel.loadPerson(personId).collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.people.PersonDetailScreen(
+            PersonDetailScreen(
                 person = person,
                 isPinned = false,
                 onTogglePin = viewModel::onTogglePin,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
-                }
-            )
-        }
-
-        composable(Screen.Locations.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.locations.LocationsListViewModel = hiltViewModel()
-            val locations by viewModel.locations.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.locations.LocationsListScreen(
-                locations = locations,
-                onLocationClick = { locationId ->
-                    navController.navigate(Screen.LocationDetail().createRoute(locationId))
                 }
             )
         }
@@ -204,7 +202,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val locationId = backStackEntry.arguments?.getString("locationId") ?: return@composable
             val viewModel: com.example.third_dz.ui.viewmodel.locations.LocationDetailViewModel = hiltViewModel()
             val location by viewModel.loadLocation(locationId).collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.locations.LocationDetailScreen(
+            LocationDetailScreen(
                 location = location,
                 isPinned = false,
                 onTogglePin = viewModel::onTogglePin,
@@ -214,27 +212,15 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        composable(Screen.Species.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.species.SpeciesListViewModel = hiltViewModel()
-            val species by viewModel.species.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.species.SpeciesListScreen(species = species)
-        }
-
-        composable(Screen.Vehicles.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.vehicles.VehiclesListViewModel = hiltViewModel()
-            val vehicles by viewModel.vehicles.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.vehicles.VehiclesListScreen(vehicles = vehicles)
-        }
-
         composable(Screen.Settings.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.SettingsViewModel = hiltViewModel()
+            val viewModel: SettingsViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val cacheTtlMinutes by viewModel.cacheTtlMinutes.collectAsStateWithLifecycle()
             val wifiOnlyRefresh by viewModel.wifiOnlyRefresh.collectAsStateWithLifecycle()
             val refreshIntervalHours by viewModel.refreshIntervalHours.collectAsStateWithLifecycle()
             val defaultListSort by viewModel.defaultListSort.collectAsStateWithLifecycle()
             val historyLimit by viewModel.historyLimit.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.settings.SettingsScreen(
+            SettingsScreen(
                 themeMode = themeMode,
                 cacheTtlMinutes = cacheTtlMinutes,
                 wifiOnlyRefresh = wifiOnlyRefresh,
@@ -254,9 +240,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         composable(Screen.History.route) {
-            val viewModel: com.example.third_dz.ui.viewmodel.HistoryViewModel = hiltViewModel()
+            val viewModel: HistoryViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
-            com.example.third_dz.ui.screen.history.HistoryScreen(
+            HistoryScreen(
                 state = state,
                 onClearAll = viewModel::clearAll,
                 onDeleteItem = viewModel::deleteItem,
