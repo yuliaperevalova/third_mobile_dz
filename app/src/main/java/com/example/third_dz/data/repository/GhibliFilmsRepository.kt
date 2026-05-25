@@ -18,11 +18,17 @@ class GhibliFilmsRepository(
 
     suspend fun refreshFilms() {
         val films = api.getAllFilms()
-        filmDao.insertAll(films.map { it.toFilmEntity() })
+        val now = System.currentTimeMillis()
+        filmDao.insertAll(films.map { it.toFilmEntity(now) })
     }
 
     suspend fun getFilmById(filmId: String): Film {
         filmDao.getFilmById(filmId)?.let { return it.toFilm() }
         return api.getFilmById(filmId)
+    }
+
+    fun isStale(ttlMinutes: Long): Flow<Boolean> = filmDao.observeMaxFetchedAt().map { maxFetchedAt ->
+        if (maxFetchedAt == 0L) true
+        else (System.currentTimeMillis() - maxFetchedAt) > ttlMinutes * 60_000
     }
 }

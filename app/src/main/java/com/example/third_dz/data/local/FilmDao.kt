@@ -17,4 +17,7 @@ interface FilmDao {
 
     @Query("SELECT * FROM film_cache WHERE id = :filmId LIMIT 1")
     suspend fun getFilmById(filmId: String): FilmEntity?
+
+    @Query("SELECT COALESCE(MAX(lastFetchedAt), 0) FROM film_cache")
+    fun observeMaxFetchedAt(): Flow<Long>
 }

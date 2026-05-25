@@ -22,7 +22,7 @@ import androidx.room.TypeConverters
         PinnedEntity::class,
         RecentViewEntity::class
     ],
-    version = 6
+    version = 7
 )
 @TypeConverters(WatchStatusConverter::class, StringListConverter::class, PinnedTypeConverter::class)
 abstract class AppDatabase : RoomDatabase() {

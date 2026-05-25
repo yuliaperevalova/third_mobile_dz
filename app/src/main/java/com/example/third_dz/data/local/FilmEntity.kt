@@ -16,7 +16,8 @@ data class FilmEntity(
     val release_date: String,
     val running_time: String,
     val rt_score: String,
-    val url: String
+    val url: String,
+    val lastFetchedAt: Long = 0L
 )
 
 fun FilmEntity.toFilm() = Film(
@@ -37,7 +38,7 @@ fun FilmEntity.toFilm() = Film(
     url = url
 )
 
-fun Film.toFilmEntity() = FilmEntity(
+fun Film.toFilmEntity(lastFetchedAt: Long = 0L) = FilmEntity(
     id = id,
     title = title,
     original_title = original_title,
@@ -48,5 +49,6 @@ fun Film.toFilmEntity() = FilmEntity(
     release_date = release_date,
     running_time = running_time,
     rt_score = rt_score,
-    url = url
+    url = url,
+    lastFetchedAt = lastFetchedAt
 )
