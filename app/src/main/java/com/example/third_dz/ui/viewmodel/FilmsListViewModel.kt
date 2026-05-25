@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.repository.RecentViewRepository
 import com.example.third_dz.data.repository.UserFilmRecordRepository
 import com.example.third_dz.ui.event.FilmsListEvent
 import com.example.third_dz.ui.state.FilmsListUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,11 +33,13 @@ private sealed interface NetworkState {
     data class Error(val message: String) : NetworkState
 }
 
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class FilmsListViewModel @Inject constructor(
     private val repository: GhibliFilmsRepository,
     private val recordRepository: UserFilmRecordRepository,
-    pinnedRepository: com.example.third_dz.data.repository.PinnedRepository
+    pinnedRepository: com.example.third_dz.data.repository.PinnedRepository,
+    private val recentViewRepository: RecentViewRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -47,6 +52,21 @@ class FilmsListViewModel @Inject constructor(
 
     val pinnedEntities = pinnedRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val recentItems: StateFlow<List<HistoryItem>> = combine(
+        recentViewRepository.observeRecent(10),
+        repository.getFilmsFlow()
+    ) { recentViews, films ->
+        val filmMap = films.associateBy { it.id }
+        recentViews.map { entity ->
+            HistoryItem(
+                id = entity.id,
+                filmId = entity.filmId,
+                filmTitle = filmMap[entity.filmId]?.title ?: entity.filmId,
+                openedAt = entity.openedAt
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val networkState: Flow<NetworkState> = _refreshTrigger
         .flatMapLatest {

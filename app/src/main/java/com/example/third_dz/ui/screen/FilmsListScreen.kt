@@ -18,9 +18,13 @@ import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.model.Film
 import com.example.third_dz.domain.model.UserFilmRecord
 import com.example.third_dz.ui.event.FilmsListEvent
+import com.example.third_dz.ui.viewmodel.HistoryItem
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +32,7 @@ fun FilmsListScreen(
     state: FilmsListUiState,
     searchQuery: String,
     statusFilter: WatchStatus?,
+    recentItems: List<HistoryItem>,
     onEvent: (FilmsListEvent) -> Unit,
     onFilmClick: (String) -> Unit,
     onFavouritesClick: () -> Unit,
@@ -65,6 +70,12 @@ fun FilmsListScreen(
             )
             StatusFilterRow(current = statusFilter) { selected ->
                 onEvent(FilmsListEvent.StatusFilterChanged(selected))
+            }
+            if (recentItems.isNotEmpty()) {
+                RecentRail(
+                    recentItems = recentItems,
+                    onFilmClick = onFilmClick
+                )
             }
             Box(modifier = Modifier.fillMaxSize()) {
                 when (state) {
@@ -109,6 +120,53 @@ fun FilmsListScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RecentRail(
+    recentItems: List<HistoryItem>,
+    onFilmClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Text(
+            text = "Recently viewed",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(recentItems, key = { it.id }) { item ->
+                RecentChip(item = item, onClick = { onFilmClick(item.filmId) })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecentChip(
+    item: HistoryItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(item.filmTitle, maxLines = 1) },
+        leadingIcon = {
+            Text(
+                text = formatTime(item.openedAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = modifier
+    )
+}
+
+private fun formatTime(timestamp: Long): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
