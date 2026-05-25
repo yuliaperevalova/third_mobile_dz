@@ -5,7 +5,6 @@ import androidx.room.Room
 import com.example.third_dz.data.api.GhibliFilmsApi
 import com.example.third_dz.data.local.AppDatabase
 import com.example.third_dz.data.local.CollectionDao
-import com.example.third_dz.data.local.FavouriteFilmDao
 import com.example.third_dz.data.local.FilmDao
 import com.example.third_dz.data.local.RecentViewDao
 import com.example.third_dz.data.local.UserFilmRecordDao
@@ -79,12 +78,6 @@ object AppModule {
         return Room.databaseBuilder(context, AppDatabase::class.java, "ghibli_db")
             .addMigrations(*Migrations.ALL)
             .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFavouriteFilmDao(db: AppDatabase): FavouriteFilmDao {
-        return db.favouriteFilmDao()
     }
 
     @Provides

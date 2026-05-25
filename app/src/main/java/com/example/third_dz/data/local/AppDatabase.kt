@@ -6,7 +6,6 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [
-        FavouriteFilmEntity::class,
         FilmEntity::class,
         UserFilmRecordEntity::class,
         CollectionEntity::class,
@@ -22,11 +21,10 @@ import androidx.room.TypeConverters
         PinnedEntity::class,
         RecentViewEntity::class
     ],
-    version = 7
+    version = 8
 )
 @TypeConverters(WatchStatusConverter::class, StringListConverter::class, PinnedTypeConverter::class)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun favouriteFilmDao(): FavouriteFilmDao
     abstract fun filmDao(): FilmDao
     abstract fun userFilmRecordDao(): UserFilmRecordDao
     abstract fun collectionDao(): CollectionDao

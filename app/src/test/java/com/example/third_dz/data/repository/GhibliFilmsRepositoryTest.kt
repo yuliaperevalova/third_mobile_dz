@@ -2,7 +2,6 @@ package com.example.third_dz.data.repository
 
 import com.example.third_dz.data.api.GhibliFilmsApi
 import com.example.third_dz.data.local.FilmDao
-import com.example.third_dz.data.local.toFavouriteFilmEntity
 import com.example.third_dz.data.model.Film
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -60,23 +59,4 @@ class GhibliFilmsRepositoryTest {
         coVerify(exactly = 1) { mockApi.getFilmById("42", any()) }
     }
 
-    // маппинг Film → FavouriteFilmEntity сохраняет все поля без потерь
-    @Test
-    fun film_toFavouriteFilmEntity_mapsAllFieldsCorrectly() {
-        val film = makeFilm("42")
-
-        val entity = film.toFavouriteFilmEntity()
-
-        assertEquals(film.id, entity.id)
-        assertEquals(film.title, entity.title)
-        assertEquals(film.original_title, entity.original_title)
-        assertEquals(film.original_title_romanised, entity.original_title_romanised)
-        assertEquals(film.description, entity.description)
-        assertEquals(film.director, entity.director)
-        assertEquals(film.producer, entity.producer)
-        assertEquals(film.release_date, entity.release_date)
-        assertEquals(film.running_time, entity.running_time)
-        assertEquals(film.rt_score, entity.rt_score)
-        assertEquals(film.url, entity.url)
-    }
 }

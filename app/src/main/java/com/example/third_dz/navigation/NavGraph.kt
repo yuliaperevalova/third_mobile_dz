@@ -13,7 +13,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.third_dz.ui.screen.FilmDetailScreen
 import com.example.third_dz.ui.screen.FilmsListScreen
-import com.example.third_dz.ui.screen.FavouritesScreen
 import com.example.third_dz.ui.screen.collections.CollectionDetailScreen
 import com.example.third_dz.ui.screen.collections.CollectionsListScreen
 import com.example.third_dz.ui.screen.history.HistoryScreen
@@ -25,13 +24,11 @@ import com.example.third_dz.ui.viewmodel.CollectionDetailViewModel
 import com.example.third_dz.ui.viewmodel.CollectionsListViewModel
 import com.example.third_dz.ui.viewmodel.FilmDetailViewModel
 import com.example.third_dz.ui.viewmodel.FilmsListViewModel
-import com.example.third_dz.ui.viewmodel.FavouritesViewModel
 import com.example.third_dz.ui.viewmodel.HistoryViewModel
 import com.example.third_dz.ui.viewmodel.SettingsViewModel
 
 sealed class Screen(val route: String) {
     data object List : Screen("list")
-    data object Favourites : Screen("favourites")
     data object Collections : Screen("collections")
     data class CollectionDetail(val collectionId: Long = 0L) : Screen("collection_detail/{collectionId}") {
         fun createRoute(collectionId: Long) = "collection_detail/$collectionId"
@@ -75,9 +72,6 @@ fun NavGraph(
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
-                onFavouritesClick = {
-                    navController.navigate(Screen.Favourites.route)
-                },
                 onCollectionsClick = {
                     navController.navigate(Screen.Collections.route)
                 }
@@ -118,26 +112,6 @@ fun NavGraph(
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
                 },
                 onBackClick = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.Favourites.route) {
-            val viewModel: FavouritesViewModel = hiltViewModel()
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
-            val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-            val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-            FavouritesScreen(
-                state = state,
-                searchQuery = searchQuery,
-                sortOrder = sortOrder,
-                filmRemovedEvent = viewModel.filmRemovedEvent,
-                onEvent = viewModel::onEvent,
-                onFilmClick = { filmId ->
-                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                }
             )
         }
 

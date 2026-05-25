@@ -26,10 +26,5 @@ sealed class FilmDetailUiState {
     ) : FilmDetailUiState()
 }
 
-sealed class FavouritesUiState {
-    data object Loading : FavouritesUiState()
-    data class Error(val message: String) : FavouritesUiState()
-    data object Empty : FavouritesUiState()
-    data class Success(val films: List<Film>) : FavouritesUiState()
-}
+
 

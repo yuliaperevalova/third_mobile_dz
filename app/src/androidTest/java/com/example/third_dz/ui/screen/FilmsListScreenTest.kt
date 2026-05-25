@@ -2,16 +2,10 @@ package com.example.third_dz.ui.screen
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.third_dz.data.model.Film
-import com.example.third_dz.data.repository.GhibliFilmsRepository
-import com.example.third_dz.data.repository.PinnedRepository
-import com.example.third_dz.data.repository.UserFilmRecordRepository
 import com.example.third_dz.ui.state.FilmsListUiState
 import com.example.third_dz.util.makeFilm
 import org.junit.Rule
@@ -34,7 +28,6 @@ class FilmsListScreenTest {
                 recentItems = emptyList(),
                 onEvent = {},
                 onFilmClick = {},
-                onFavouritesClick = {},
                 onCollectionsClick = {}
             )
         }
@@ -53,7 +46,6 @@ class FilmsListScreenTest {
                 recentItems = emptyList(),
                 onEvent = {},
                 onFilmClick = {},
-                onFavouritesClick = {},
                 onCollectionsClick = {}
             )
         }
@@ -74,34 +66,12 @@ class FilmsListScreenTest {
                 recentItems = emptyList(),
                 onEvent = {},
                 onFilmClick = { clickedFilmId = it },
-                onFavouritesClick = {},
                 onCollectionsClick = {}
             )
         }
 
         composeRule.onNodeWithText(film.title).performClick()
         assert(clickedFilmId == "1") { "Expected filmId '1', got '$clickedFilmId'" }
-    }
-
-    @Test
-    fun favouritesButton_click_invokesOnFavouritesClick() {
-        var favouritesClicked = false
-
-        composeRule.setContent {
-            FilmsListScreen(
-                state = FilmsListUiState.Success(emptyList(), emptyMap()),
-                searchQuery = "",
-                statusFilter = null,
-                recentItems = emptyList(),
-                onEvent = {},
-                onFilmClick = {},
-                onFavouritesClick = { favouritesClicked = true },
-                onCollectionsClick = {}
-            )
-        }
-
-        composeRule.onNodeWithContentDescription("Favourites").performClick()
-        assert(favouritesClicked) { "Expected favouritesClick to be invoked" }
     }
 
     @Test
@@ -116,7 +86,6 @@ class FilmsListScreenTest {
                 recentItems = emptyList(),
                 onEvent = {},
                 onFilmClick = {},
-                onFavouritesClick = {},
                 onCollectionsClick = { collectionsClicked = true }
             )
         }
@@ -135,7 +104,6 @@ class FilmsListScreenTest {
                 recentItems = emptyList(),
                 onEvent = {},
                 onFilmClick = {},
-                onFavouritesClick = {},
                 onCollectionsClick = {}
             )
         }

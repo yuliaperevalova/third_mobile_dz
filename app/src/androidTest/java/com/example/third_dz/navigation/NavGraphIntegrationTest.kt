@@ -25,27 +25,6 @@ class NavGraphIntegrationTest {
     }
 
     @Test
-    fun navigateToFavouritesAndBack() {
-        // Ждём загрузки приложения
-        composeRule.waitUntil(15_000) { true }
-
-        // Кликаем по кнопке "Favourites" (по contentDescription)
-        composeRule.onNodeWithContentDescription("Favourites").performClick()
-
-        // Ждём перехода
-        composeRule.waitUntil(3_000) { true }
-
-        // Проверяем, что мы на экране Favourites
-        composeRule.onNodeWithText("Favourites").assertExists()
-        
-        // Кликаем по кнопке "Back"
-        composeRule.onNodeWithContentDescription("Back").performClick()
-        
-        // Ждём возврата
-        composeRule.waitUntil(3_000) { true }
-    }
-
-    @Test
     fun navigateToCollectionsScreen() {
         // Ждём загрузки приложения
         composeRule.waitUntil(15_000) { true }
