@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.example.third_dz.data.local.WatchStatus
 import com.example.third_dz.data.model.Film
 import com.example.third_dz.data.repository.GhibliFilmsRepository
+import com.example.third_dz.data.repository.PinnedRepository
 import com.example.third_dz.data.repository.UserFilmRecordRepository
 import com.example.third_dz.domain.model.UserFilmRecord
 import com.example.third_dz.ui.event.FilmsListEvent
@@ -35,6 +36,7 @@ class FilmsListViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val mockRepository = mockk<GhibliFilmsRepository>()
     private val mockRecordRepository = mockk<UserFilmRecordRepository>()
+    private val mockPinnedRepository = mockk<PinnedRepository>()
 
     @Before
     fun setup() {
@@ -52,9 +54,10 @@ class FilmsListViewModelTest {
     fun initialState_isLoading() = runTest(testDispatcher) {
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(listOf(makeFilm()))
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
 
         assertEquals(FilmsListUiState.Loading, vm.uiState.value)
     }
@@ -64,9 +67,10 @@ class FilmsListViewModelTest {
         val films = listOf(makeFilm("1"), makeFilm("2"))
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(films)
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -80,9 +84,10 @@ class FilmsListViewModelTest {
     fun loadFilms_emptyList_emitsEmptyState() = runTest(testDispatcher) {
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -95,9 +100,10 @@ class FilmsListViewModelTest {
         val msg = "connection timeout"
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(emptyList())
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } throws RuntimeException(msg)
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -112,9 +118,10 @@ class FilmsListViewModelTest {
         val films = listOf(makeFilm())
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns flowOf(films)
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
 
         vm.uiState.test {
             assertEquals(FilmsListUiState.Loading, awaitItem())
@@ -135,9 +142,10 @@ class FilmsListViewModelTest {
         )
         every { mockRecordRepository.observeAll() } returns flowOf(records)
         every { mockRepository.getFilmsFlow() } returns flowOf(films)
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } returns Unit
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -157,9 +165,10 @@ class FilmsListViewModelTest {
         val filmsFlow = MutableStateFlow<List<Film>>(emptyList())
         every { mockRecordRepository.observeAll() } returns emptyRecordsFlow()
         every { mockRepository.getFilmsFlow() } returns filmsFlow
+        every { mockPinnedRepository.observeAll() } returns flowOf(emptyList())
         coEvery { mockRepository.refreshFilms() } throws RuntimeException("network error")
 
-        val vm = FilmsListViewModel(mockRepository, mockRecordRepository)
+        val vm = FilmsListViewModel(mockRepository, mockRecordRepository, mockPinnedRepository)
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertTrue(vm.uiState.value is FilmsListUiState.Error)

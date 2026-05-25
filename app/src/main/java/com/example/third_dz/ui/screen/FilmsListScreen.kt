@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ fun FilmsListScreen(
     onEvent: (FilmsListEvent) -> Unit,
     onFilmClick: (String) -> Unit,
     onFavouritesClick: () -> Unit,
+    onCollectionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isRefreshing = (state as? FilmsListUiState.Success)?.isRefreshing == true
@@ -42,6 +44,9 @@ fun FilmsListScreen(
                 actions = {
                     IconButton(onClick = { onEvent(FilmsListEvent.Refresh) }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                    IconButton(onClick = onCollectionsClick) {
+                        Icon(Icons.Default.Folder, contentDescription = "Collections")
                     }
                     IconButton(onClick = onFavouritesClick) {
                         Icon(Icons.Default.Favorite, contentDescription = "Favourites")

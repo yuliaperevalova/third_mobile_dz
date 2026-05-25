@@ -64,6 +64,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onFavouritesClick = {
                     navController.navigate(Screen.Favourites.route)
+                },
+                onCollectionsClick = {
+                    navController.navigate(Screen.Collections.route)
                 }
             )
         }
