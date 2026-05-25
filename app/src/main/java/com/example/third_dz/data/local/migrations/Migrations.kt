@@ -193,5 +193,19 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS recent_view (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    filmId TEXT NOT NULL,
+                    openedAt INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

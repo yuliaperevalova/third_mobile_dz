@@ -19,9 +19,10 @@ import androidx.room.TypeConverters
         FilmLocationCrossRef::class,
         FilmSpeciesCrossRef::class,
         FilmVehicleCrossRef::class,
-        PinnedEntity::class
+        PinnedEntity::class,
+        RecentViewEntity::class
     ],
-    version = 5
+    version = 6
 )
 @TypeConverters(WatchStatusConverter::class, StringListConverter::class, PinnedTypeConverter::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -34,4 +35,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun speciesDao(): SpeciesDao
     abstract fun vehiclesDao(): VehiclesDao
     abstract fun pinnedEntityDao(): PinnedEntityDao
+    abstract fun recentViewDao(): RecentViewDao
 }
