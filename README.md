@@ -1,95 +1,108 @@
-# Studio Ghibli Films App
+# Ghibli Companion
 
-## Автор
-**ФИО:** Перевалова Юлия Владимировна
-**Группа:** Б9123-09.03.03пикд7
+**Автор:** Перевалова Юлия Владимировна
+**Группа:** Б9123-09.03.03пикд2
 
 ---
 
-## Используемый API
+## API
 
 **Studio Ghibli API** — `https://ghibliapi.vercel.app/`
 
-Бесплатный REST API без аутентификации. Используемые эндпоинты:
-- `GET /films` — список всех фильмов
-- `GET /films/{id}` — детали конкретного фильма
+Используемые эндпоинты: `GET /films`, `/films/{id}`, `/people`, `/locations`, `/species`, `/vehicles` (все 5).
 
 ---
 
-## Что хранится в Room
+## Что добавлено
 
-**Таблица:** `favourite_films`
+Приложение превращено из витрины 22 фильмов с одним «избранным» в персональный offline-first companion:
 
-**Сценарий:** Избранное (Favourites)
-
-Когда пользователь добавляет фильм в избранное, приложение запрашивает детали фильма через API и сохраняет их в локальную БД. Экран «Избранное» загружает данные напрямую из Room — без обращения к сети.
-
-**Поля таблицы:** `id`, `title`, `original_title`, `original_title_romanised`, `description`, `director`, `producer`, `release_date`, `running_time`, `rt_score`, `url`
+- **Records** — статус, оценка (0–10), текстовая заметка на каждый фильм
+- **Collections** — пользовательские коллекции фильмов (M–N, создание/переименование/удаление/добавление/удаление фильмов)
+- **Ghibli Universe** — персонажи, локации, расы, транспорт (4 справочника, M–N cross-ref с фильмами)
+- **Pinned** — универсальные закреплённые сущности любого типа с заметкой
+- **History** — автосохранение просмотров с дедупом за 5 мин, лимит из настроек, swipe-to-delete
+- **Settings** — тема, TTL кэша, Wi-Fi only, лимит истории, sort order, очистка данных, обновление вселенной, экспорт/импорт бэкапа
+- **Offline-first** — полная предзагрузка каталога и справочников, чтение только из Room, флаги isOffline/isStale
+- **WorkManager** — initial preload (one-time, requiresNetwork) + periodic backup (раз в неделю, requiresStorageNotLow)
+- **Bottom Nav** — Films / Collections / Universe / History / Settings
+- **Backup** — JSON-экспорт всех пользовательских данных (records + collections + pins + history) с ротацией 4 файлов
 
 ---
 
-## Как проверить
+## Room: таблицы (9 entity)
 
-1. Открыть приложение → дождаться загрузки списка фильмов
-2. Нажать на иконку сердечка у любого фильма — он добавится в избранное
-3. Перейти на экран «Избранное» — фильм отображается
-4. **Полностью закрыть приложение** (убить процесс)
-5. Открыть приложение снова → перейти в «Избранное»
-6. Фильм по-прежнему там — данные сохранились в Room
+| Таблица | Назначение |
+|---|---|
+| `film_cache` | Кэш каталога фильмов (с `lastFetchedAt` для TTL) |
+| `user_film_record` | Статус, оценка, заметка по фильму |
+| `collection` | Коллекция (id, name, color, createdAt) |
+| `collection_film_cross_ref` | M–N коллекция↔фильм |
+| `person`, `location`, `species`, `vehicle` | Справочники вселенной |
+| `film_person/location/species/vehicle_cross_ref` | M–N API-side связи |
+| `pinned_entity` | Закреплённые сущности (composite PK) |
+| `recent_view` | История просмотров |
+
+DataStore — только настройки.
+
+---
+
+## Сценарии (4 шт)
+
+1. **Records** (substantial) — простановка статуса/оценки/заметки на FilmDetailScreen, фильтр по статусу на FilmsListScreen
+2. **Collections** (substantial) — создание/переименование/удаление коллекций, добавление/удаление фильмов, просмотр списка и деталей
+3. **Ghibli Universe + Pinned** (substantial) — 4 справочника, детальные страницы персонажей/локаций, закрепление любого типа сущности
+4. **History** (базовый) — автосохранение, rail на главном экране, экран истории с очисткой и swipe-to-delete
+
+---
+
+## Offline-first
+
+- UI читает только из Room
+- Сеть — WorkManager (InitialPreloadWorker грузит все 5 эндпоинтов) + pull-to-refresh
+- `NetworkMonitor` → `Flow<Boolean>` (ConnectivityManager)
+- `IsCatalogueStaleUseCase` — проверка TTL (`lastFetchedAt` + настройка пользователя)
+- `OfflineBanner` / `StaleBanner` на FilmsListScreen
+
+## Фоновая обработка
+
+- `InitialPreloadWorker` — однократный при первом запуске, грузит все эндпоинты
+- `BackupUserDataWorker` — периодический раз в неделю, экспорт JSON
+- Ротация: хранится до 4 backup-файлов
 
 ---
 
 ## Тесты
 
-### Юнит-тесты — 9 штук
+### Unit-тесты (21 шт)
 
-**FilmsListViewModelTest (6 тестов):**
-- `initialState_isLoading` — начальное состояние экрана Loading
-- `loadFilms_success_emitsSuccessState` — успешная загрузка данных
-- `loadFilms_emptyList_emitsEmptyState` — пустой результат даёт Empty, а не Success(emptyList())
-- `loadFilms_error_emitsErrorState` — ошибка загрузки
-- `loadFilms_emitsLoadingThenSuccess` — полная последовательность эмиссий Loading → Success (Turbine)
-- `retry_afterError_callsApiAgain` — retry после ошибки инициирует новый запрос к API
+- `FilmsListViewModelTest` (7) — состояния, offline-флаг, search, filter
+- `SettingsViewModelTest` (1) — двусторонняя связка DataStore
+- `FilmDetailViewModelTest` (1) — combine(film, record) через Turbine
+- `HistoryViewModelTest` (4) — загрузка, clearAll, deleteItem, реактивность
+- `CollectionDetailViewModelTest` (1) — Turbine
+- `GhibliFilmsRepositoryTest` (2) — refreshFilms, getFilmById fallback
+- `IsCatalogueStaleUseCaseTest` (3) — expired, within TTL, never fetched
+- `AddFilmToCollectionUseCaseTest` (1) — идемпотентность
+- `RecordOpenUseCaseTest` (1) — дедуп в окне
 
-**FavouritesViewModelTest (2 теста):**
-- `initialState_withEmptyDb_emitsEmpty` — пустая БД при запуске даёт Empty
-- `retry_triggersNewFlatMapLatestSubscription` — retry создаёт новую подписку через flatMapLatest
+### Android-тесты (36 шт)
 
-**GhibliFilmsRepositoryTest (1 тест):**
-- `getAllFilms_cachesResult_doesNotCallApiSecondTime` — второй вызов не идёт в сеть
-
-### Дополнительные юнит-тесты data-слоя — 1 штука
-
-**GhibliFilmsRepositoryTest:**
-- `film_toFavouriteFilmEntity_mapsAllFieldsCorrectly` — маппинг Film → FavouriteFilmEntity без потерь
-
-### Интеграционные тесты — 4 штуки
-
-**FavouriteFilmDaoTest (Room In-Memory, 3 теста):**
-- `insert_andGetAll_returnsInsertedFilm` — вставка и чтение из базы
-- `insert_duplicate_doesNotCreateDuplicate` — повторная вставка одного id не создаёт дубль
-- `delete_removesFilmFromFavourites` — удаление из избранного
-
-**FilmsListScreenTest (Compose UI, 1 тест):**
-- `errorState_retryButton_clickLeadsToSuccess` — Error state → клик Retry → отображается Success
-
-### Flow-тесты — 2 штуки
-
-1. **Полная последовательность эмиссий** (`loadFilms_emitsLoadingThenSuccess`):
-   Через Turbine проверяется точная цепочка: `Loading` → `Success`. Тест перехватывает каждый элемент через `awaitItem()`, а не только финальный `state.value`.
-
-2. **Нетривиальное потоковое поведение** (`retry_triggersNewFlatMapLatestSubscription`):
-   Проверяется, что emit в `retryTrigger` (MutableSharedFlow) действительно создаёт новую подписку через `flatMapLatest` — `getAllFavourites()` вызывается ровно дважды. Тест проверяет контракт поведения оператора, а не финальное значение состояния.
+- `Migration2to3Test` — перенос favourite_films → user_film_record
+- `UserFilmRecordDaoTest` — upsert/delete/observe
+- `CollectionDaoTest` — M–N add/remove, CASCADE
+- `CollectionDaoTest` (cross-ref) — FK constraint
+- `UniverseDaoTest` — батч insert, cross-ref CASCADE
+- `PinnedEntityDaoTest` — pin/unpin, observe
+- `RecentViewDaoTest` — дедуп за 5 мин, лимит
+- `BackupRepositoryTest` — round-trip export→import, ротация
+- `InitialPreloadWorkerTest` — networkFailure, success, maxRetries
+- `BackupUserDataWorkerTest` — export, ротация
+- `FavouriteFilmDaoTest` (3) — legacy (удалён в Phase 43+44)
+- `FavouritesRepositoryTest` (3) — legacy (удалён)
+- `FilmsListScreenTest` (5) — error, success, filmClick, collections, empty
+- `NavGraphIntegrationTest` (1) — collectionsScreen
+- `Migration2to3Test` — favourite_films → WATCHED
+- `SettingsDataStoreTest` (1) — основной
 
 ---
-
-## Скриншоты
-
-### Список фильмов (List)
-![Список фильмов](/screenshots/list.jpg)
-
-### Детали фильма (Detail)
-![Детали фильма](/screenshots/details.jpg)
-
-### Избранное (Favourites)
-![Избранное](/screenshots/favourite.jpg)

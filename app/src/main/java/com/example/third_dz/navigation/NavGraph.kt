@@ -1,6 +1,7 @@
 package com.example.third_dz.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -158,14 +159,18 @@ fun NavGraph(
         ) { backStackEntry ->
             val personId = backStackEntry.arguments?.getString("personId") ?: return@composable
             val viewModel: com.example.third_dz.ui.viewmodel.people.PersonDetailViewModel = hiltViewModel()
-            val person by viewModel.loadPerson(personId).collectAsStateWithLifecycle()
+            val person by viewModel.person.collectAsStateWithLifecycle()
+            val filmTitles by viewModel.filmTitles.collectAsStateWithLifecycle()
+            LaunchedEffect(personId) { viewModel.loadPerson(personId) }
             PersonDetailScreen(
                 person = person,
                 isPinned = false,
+                filmTitles = filmTitles,
                 onTogglePin = viewModel::onTogglePin,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
-                }
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -175,14 +180,18 @@ fun NavGraph(
         ) { backStackEntry ->
             val locationId = backStackEntry.arguments?.getString("locationId") ?: return@composable
             val viewModel: com.example.third_dz.ui.viewmodel.locations.LocationDetailViewModel = hiltViewModel()
-            val location by viewModel.loadLocation(locationId).collectAsStateWithLifecycle()
+            val location by viewModel.location.collectAsStateWithLifecycle()
+            val filmTitles by viewModel.filmTitles.collectAsStateWithLifecycle()
+            LaunchedEffect(locationId) { viewModel.loadLocation(locationId) }
             LocationDetailScreen(
                 location = location,
                 isPinned = false,
+                filmTitles = filmTitles,
                 onTogglePin = viewModel::onTogglePin,
                 onFilmClick = { filmId ->
                     navController.navigate(Screen.Detail(filmId).createRoute(filmId))
-                }
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 

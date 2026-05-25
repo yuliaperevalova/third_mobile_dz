@@ -12,8 +12,11 @@ interface FilmDao {
     @Query("SELECT * FROM film_cache ORDER BY title ASC")
     fun getFilmsFlow(): Flow<List<FilmEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(films: List<FilmEntity>)
+
+    @Query("UPDATE film_cache SET lastFetchedAt = :now")
+    suspend fun updateAllLastFetchedAt(now: Long)
 
     @Query("SELECT * FROM film_cache WHERE id = :filmId LIMIT 1")
     suspend fun getFilmById(filmId: String): FilmEntity?

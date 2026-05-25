@@ -20,6 +20,7 @@ class GhibliFilmsRepository(
         val films = api.getAllFilms()
         val now = System.currentTimeMillis()
         filmDao.insertAll(films.map { it.toFilmEntity(now) })
+        filmDao.updateAllLastFetchedAt(now)
     }
 
     suspend fun getFilmById(filmId: String): Film {
