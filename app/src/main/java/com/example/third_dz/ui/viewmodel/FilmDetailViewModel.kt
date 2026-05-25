@@ -16,6 +16,7 @@ import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
 import com.example.third_dz.domain.usecase.record.SetNoteUseCase
 import com.example.third_dz.domain.usecase.record.SetRatingUseCase
 import com.example.third_dz.domain.usecase.record.SetWatchStatusUseCase
+import com.example.third_dz.domain.usecase.recent.RecordOpenUseCase
 import com.example.third_dz.ui.event.FilmDetailEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +44,8 @@ class FilmDetailViewModel @Inject constructor(
     observeCollections: ObserveCollectionsUseCase,
     private val observeCollectionsForFilm: ObserveCollectionsForFilmUseCase,
     private val addFilmToCollection: AddFilmToCollectionUseCase,
-    private val removeFilmFromCollection: RemoveFilmFromCollectionUseCase
+    private val removeFilmFromCollection: RemoveFilmFromCollectionUseCase,
+    private val recordOpen: RecordOpenUseCase
 ) : ViewModel() {
 
     private sealed interface FilmResult {
@@ -86,6 +88,7 @@ class FilmDetailViewModel @Inject constructor(
 
     fun loadFilm(filmId: String) {
         filmIdFlow.value = filmId
+        viewModelScope.launch { recordOpen(filmId) }
         viewModelScope.launch {
             filmResultFlow.value = FilmResult.Loading
             try {

@@ -11,6 +11,7 @@ import com.example.third_dz.domain.usecase.record.ObserveFilmRecordUseCase
 import com.example.third_dz.domain.usecase.record.SetNoteUseCase
 import com.example.third_dz.domain.usecase.record.SetRatingUseCase
 import com.example.third_dz.domain.usecase.record.SetWatchStatusUseCase
+import com.example.third_dz.domain.usecase.recent.RecordOpenUseCase
 import com.example.third_dz.ui.event.FilmDetailEvent
 import com.example.third_dz.ui.state.FilmDetailUiState
 import com.example.third_dz.util.makeFilm
@@ -51,6 +52,7 @@ class FilmDetailViewModelTest {
     }
     private val addFilmToCollection = mockk<AddFilmToCollectionUseCase>(relaxed = true)
     private val removeFilmFromCollection = mockk<RemoveFilmFromCollectionUseCase>(relaxed = true)
+    private val recordOpen = mockk<RecordOpenUseCase>(relaxed = true)
 
     @Before
     fun setup() {
@@ -65,7 +67,7 @@ class FilmDetailViewModelTest {
     private fun vm() = FilmDetailViewModel(
         repository, setStatus, setRating, setNote, observeRecord,
         observeCollections, observeCollectionsForFilm,
-        addFilmToCollection, removeFilmFromCollection
+        addFilmToCollection, removeFilmFromCollection, recordOpen
     )
 
     @Test

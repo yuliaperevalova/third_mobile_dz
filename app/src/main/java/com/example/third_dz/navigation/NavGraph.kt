@@ -41,6 +41,7 @@ sealed class Screen(val route: String) {
     }
     data object Species : Screen("species")
     data object Vehicles : Screen("vehicles")
+    data object History : Screen("history")
 }
 
 @Composable
@@ -220,6 +221,19 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             val viewModel: com.example.third_dz.ui.viewmodel.vehicles.VehiclesListViewModel = hiltViewModel()
             val vehicles by viewModel.vehicles.collectAsStateWithLifecycle()
             com.example.third_dz.ui.screen.vehicles.VehiclesListScreen(vehicles = vehicles)
+        }
+
+        composable(Screen.History.route) {
+            val viewModel: com.example.third_dz.ui.viewmodel.HistoryViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            com.example.third_dz.ui.screen.history.HistoryScreen(
+                state = state,
+                onClearAll = viewModel::clearAll,
+                onDeleteItem = viewModel::deleteItem,
+                onItemClick = { filmId ->
+                    navController.navigate(Screen.Detail(filmId).createRoute(filmId))
+                }
+            )
         }
     }
 }
